@@ -61,15 +61,21 @@ const CHK=(()=>{
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
   return bRule(a,c);}
- // ㅂ-불규칙: 덥어요 вместо 더워요, 가까와요, 도워요, 더워지 않아요; правильные (입다, 좁다) — 조워요
- function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l);if(d.t!==17)return null;
-  const b=s.slice(0,-1)+enc(d.l,d.v,0);return {reg:[s+'어요',s+'아요',s+'었어요',s+'았어요'],irr:[b+'워요',b+'웠어요',b+'와요',b+'왔어요'],ji:[b+'워지',b+'우지',b+'와지',b+'오지']};}
+ // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
+ const END=['어요','아요','었어요','았어요'];
+ function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
+  const reg=END.map(e=>s+e);
+  if(d.t===17)return {k:'b',reg,irr:[z+'워요',z+'웠어요',z+'와요',z+'왔어요'],ji:[z+'워지',z+'우지',z+'와지',z+'오지']};
+  if(d.t===7){const r=h+enc(d.l,d.v,8);return {k:'d',reg,irr:END.map(e=>r+e),ji:[r+'지']};}
+  if(d.t===19)return {k:'s',reg,irr:END.map(e=>z+e),ji:[z+'아지',z+'어지',z+'지']};
+  return null;}
+ const BN={b:['ㅂ-불규칙: перед 아/어 ㅂ → 우, 우 + 어 = 워: ','ㅂ'],d:['ㄷ-불규칙: перед гласной ㄷ → ㄹ: ','ㄷ'],s:['ㅅ-불규칙: перед гласной ㅅ выпадает: ','ㅅ']};
  function bRule(a,c){
-  if(c.endsWith('지')&&LEX.stem[c.slice(0,-1)]){const b=bForms(c.slice(0,-1));if(b&&b.ji.includes(a))return {kind:'birr',note:'Перед -지 ㅂ остаётся на месте: '+c+'.'};return null;}
+  if(c.endsWith('지')&&LEX.stem[c.slice(0,-1)]){const b=bForms(c.slice(0,-1));if(b&&b.ji.includes(a))return {kind:'birr',note:'Перед -지 основа не меняется: '+c+'.'};return null;}
   const f=LEX.form[c];if(!f)return null;const s=f.s,b=bForms(s);if(!b)return null;const irr=!c.startsWith(s);
-  if(irr&&b.reg.includes(a))return {kind:'birr',note:(s==='돕'?'돕다 — особый: ㅂ → 오, 오 + 아 = 와: ':'ㅂ-불규칙: перед 아/어 ㅂ → 우, 우 + 어 = 워: ')+c+'.'};
-  if(irr&&b.irr.includes(a)&&a!==c)return {kind:'birr',note:(s==='돕'?'돕다 — 와, не 워: ':'워 — после любой гласной (кроме 돕다): ')+c+'.'};
-  if(!irr&&b.irr.includes(a))return {kind:'breg',note:s+'다 — правильная основа, ㅂ не меняется: '+c+'.'};
+  if(irr&&b.reg.includes(a))return {kind:'birr',note:(s==='돕'?'돕다 — особый: ㅂ → 오, 오 + 아 = 와: ':BN[b.k][0])+c+'.'};
+  if(irr&&b.k==='b'&&b.irr.includes(a)&&a!==c)return {kind:'birr',note:(s==='돕'?'돕다 — 와, не 워: ':'워 — после любой гласной (кроме 돕다): ')+c+'.'};
+  if(!irr&&b.irr.includes(a))return {kind:'breg',note:s+'다 — правильная основа, '+BN[b.k][1]+' не меняется: '+c+'.'};
   return null;}
  function rules(ans,v){const A=ans.split(' '),C=v.split(' ');if(A.length!==C.length)return null;
   const diff=[];for(let k=0;k<A.length;k++)if(A[k]!==C[k])diff.push(k);
