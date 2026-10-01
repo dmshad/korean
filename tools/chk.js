@@ -39,7 +39,11 @@ const CHK=(()=>{
  const TK=new Set([1,2,3,7,9,17,18,19,20,22,23,24,25,26]),TN={0:1,3:4,7:8,9:10,12:13};
  function tense(s){const a=[...s];for(let k=0;k+1<a.length;k++){const c=a[k],n=a[k+1];if(!isH(c)||!isH(n))continue;
    const x=dec(c),y=dec(n);if(TK.has(x.t)&&TN[y.l]!==undefined)a[k+1]=enc(TN[y.l],y.v,y.t);}return a.join('');}
- const pron=s=>{const l=link(s);return [l,tense(l)];};
+ // назализация перед ㄴ/ㅁ: 합니다 → [함니다], 먹습니다 → [먹씀니다]
+ const NS={1:21,2:21,24:21,7:4,19:4,20:4,22:4,23:4,25:4,17:16,26:16};
+ function nasal(s){const a=[...s];for(let k=0;k+1<a.length;k++){const c=a[k],n=a[k+1];if(!isH(c)||!isH(n))continue;
+   const x=dec(c),y=dec(n);if((y.l===2||y.l===6)&&NS[x.t]!==undefined)a[k]=enc(x.l,x.v,NS[x.t]);}return a.join('');}
+ const pron=s=>{const l=link(s),t=tense(l);return [l,t,nasal(l),nasal(t)];};
  /* ---- расстояние по чамо ---- */
  function lev(a,b){a=[...a];b=[...b];const m=a.length,n=b.length;if(Math.abs(m-n)>3)return 9;let p=Array.from({length:n+1},(_,j)=>j);
   for(let i=1;i<=m;i++){const q=[i];for(let j=1;j<=n;j++)q[j]=Math.min(p[j]+1,q[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=q;}return p[n];}
@@ -52,7 +56,9 @@ const CHK=(()=>{
   [['이었어요','였어요'],'связка в прошедшем: после согласной — 이었어요, после гласной — 였어요'],
   [['와','과'],'와/과: после гласной — 와, после согласной — 과 (наоборот, чем у 은/는)'],
   [['아요','어요'],'основа на ㅏ/ㅗ — 아요, иначе — 어요'],
-  [['았어요','었어요'],'основа на ㅏ/ㅗ — 았어요, иначе — 었어요']];
+  [['았어요','었어요'],'основа на ㅏ/ㅗ — 았어요, иначе — 었어요'],
+  [['습니다','읍니다'],'после согласной — 습니다 (읍니다 — устаревшее написание)'],
+  [['습니까','읍니까'],'после согласной — 습니까 (읍니까 — устаревшее написание)']];
  function tokRule(a,c){ // a — ответ, c — верный токен
   if(c.endsWith('요')&&a===c.slice(0,-1))return {kind:'yo',note:'Без 요 получается 반말 (фамильярно). В вежливой речи — '+c+'.'};
   let p=0;while(p<a.length&&p<c.length&&a[p]===c[p])p++;
@@ -60,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c);}
+  return bRule(a,c)||hRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -70,6 +76,16 @@ const CHK=(()=>{
   if(d.t===19)return {k:'s',reg,irr:END.map(e=>z+e),ji:[z+'아지',z+'어지',z+'지']};
   return null;}
  const BN={b:['ㅂ-불규칙: перед 아/어 ㅂ → 우, 우 + 어 = 워: ','ㅂ'],d:['ㄷ-불규칙: перед гласной ㄷ → ㄹ: ','ㄷ'],s:['ㅅ-불규칙: перед гласной ㅅ выпадает: ','ㅅ']};
+ // 합니다: -ㅂ니다 после гласной и ㄹ (ㄹ выпадает), -습니다 после согласной; ㅂ/ㄷ перед ними не меняются
+ function hRule(a,c){const e=c.endsWith('니다')?'니다':c.endsWith('니까')?'니까':null;if(!e||a===c)return null;
+  const pre=c.slice(0,-2),l=pre.slice(-1);if(!l||!isH(l))return null;const N='-ㅂ'+e+' — после гласной и ㄹ (ㄹ выпадает: 압니다), -습'+e+' — после согласной: '+c+'.';
+  if(l==='습'){const s=pre.slice(0,-1),q=s.slice(-1);if(!q||!isH(q))return null;const d=dec(q),z=s.slice(0,-1)+enc(d.l,d.v,0);
+   if(d.t===17&&[z+'웁'+e,z+'우습'+e,z+'워습'+e].includes(a))return {kind:'h',note:'Перед согласным окончанием ㅂ на месте: '+c+'.'};
+   if(d.t===7&&[z+enc(d.l,d.v,8).slice(-1)+'습'+e,s.slice(0,-1)+enc(d.l,d.v,8)+'습'+e,z+'릅'+e].includes(a))return {kind:'h',note:'Перед согласным окончанием ㄷ на месте: '+c+'.'};
+   return null;}
+  const d=dec(l);if(d.t!==17)return null;const z=pre.slice(0,-1)+enc(d.l,d.v,0),zl=pre.slice(0,-1)+enc(d.l,d.v,8);
+  if([z+'습'+e,z+'읍'+e,zl+'습'+e,zl+'읍'+e].includes(a))return {kind:'h',note:N};
+  return null;}
  function bRule(a,c){
   if(c.endsWith('지')&&LEX.stem[c.slice(0,-1)]){const b=bForms(c.slice(0,-1));if(b&&b.ji.includes(a))return {kind:'birr',note:'Перед -지 основа не меняется: '+c+'.'};return null;}
   const f=LEX.form[c];if(!f)return null;const s=f.s,b=bForms(s);if(!b)return null;const irr=!c.startsWith(s);
