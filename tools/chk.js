@@ -66,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -117,8 +117,8 @@ const CHK=(()=>{
    if(w.cat==='verb'&&k.endsWith('하다')&&k.length>2)n.add(k.slice(0,-2));
    if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);
     st[sm]={pres:w.forms.pres,past:w.forms.past};f[w.forms.pres]={s:sm,p:0};if(w.forms.past)f[w.forms.past]={s:sm,p:1};}}
-  const fu={},se={},ps={},re={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;const p2=psTok(sm,e.pres);if(p2)ps[p2]=sm;const r2=reTok(sm,e.pres);if(r2)re[r2]=sm;}
-  LEX={nouns:n,form:f,stem:st,fut:fu,se,ps,re};}
+  const fu={},se={},ps={},re={},as={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;const p2=psTok(sm,e.pres);if(p2)ps[p2]=sm;const r2=reTok(sm,e.pres);if(r2)re[r2]=sm;const a2=asTok(sm,e.pres);if(a2&&!as[a2])as[a2]=sm;}
+  LEX={nouns:n,form:f,stem:st,fut:fu,se,ps,re,as};}
  // -(으)세요: форма основы
  function seTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return s+'세요';if(d.t===8)return b+enc(d.l,d.v,0)+'세요';
@@ -158,6 +158,18 @@ const CHK=(()=>{
   const s=c.slice(0,-2),e=LEX.stem[s];if(!e)return null;const d=dec(s.slice(-1)),b=s.slice(0,-1),ps=String(e.pres||'').slice(0,-1);
   const W=[s+'으지만',ps+'지만',b+enc(d.l,d.v,0)+'지만',b+enc(d.l,d.v,8)+'지만',b+enc(d.l,d.v,0)+'우지만'];if(!W.includes(a))return null;
   return {kind:'jm',note:'-지만 — прямо к основе, без изменений (неправильные основы тоже целые): '+c+'.'};}
+ // -아서/어서: 해요-форма без 요 + 서; время не ставится; существительное — 이라서/라서
+ function asTok(s,p){p=String(p||'');return p.endsWith('요')&&!p.endsWith('에요')?p.slice(0,-1)+'서':null;}
+ function asRule(a,c){if(!c.endsWith('서')||a===c)return null;
+  if(c.endsWith('이라서')&&a===c.slice(0,-3)+'라서'&&LEX.nouns.has(c.slice(0,-3)))return {kind:'as',note:'После согласной — 이라서: '+c+'.'};
+  if(c.endsWith('라서')&&!c.endsWith('이라서')&&a===c.slice(0,-2)+'이라서'&&LEX.nouns.has(c.slice(0,-2)))return {kind:'as',note:'После гласной — 라서: '+c+'.'};
+  const s=LEX.as&&LEX.as[c];if(!s)return null;const e=LEX.stem[s]||{},pa=String(e.past||'');
+  if(pa.endsWith('요')&&a===pa.slice(0,-1)+'서')return {kind:'as',note:'-아서/어서 не берёт время — прошедшее только в конце фразы: '+c+'.'};
+  const d=dec(s.slice(-1)),b=s.slice(0,-1),V=d.v,ok=new Set();
+  if(d.t===0&&s.endsWith('하'))ok.add(s+'여서');if(d.t===0&&[8,13,20].includes(V))ok.add(s+(V===8?'아서':'어서'));
+  const W=[s+'아서',s+'어서',s+'서',s+'으서',s+'여서',b+enc(d.l,d.v,0)+'어서',b+enc(d.l,d.v,0)+'아서',b+enc(d.l,d.v,0)+'워서'].filter(x=>x!==c&&!ok.has(x));
+  if(!W.includes(a))return null;
+  return {kind:'as',note:'-아서/어서 — 해요-форма без 요 + 서: '+(e.pres||'')+' → '+c+'.'};}
  // -(으)ㄹ 거예요: форма перед 거예요
  function futTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
