@@ -66,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -117,8 +117,8 @@ const CHK=(()=>{
    if(w.cat==='verb'&&k.endsWith('하다')&&k.length>2)n.add(k.slice(0,-2));
    if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);
     st[sm]={pres:w.forms.pres,past:w.forms.past};f[w.forms.pres]={s:sm,p:0};if(w.forms.past)f[w.forms.past]={s:sm,p:1};}}
-  const fu={},se={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;}
-  LEX={nouns:n,form:f,stem:st,fut:fu,se};}
+  const fu={},se={},ps={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;const p2=psTok(sm,e.pres);if(p2)ps[p2]=sm;}
+  LEX={nouns:n,form:f,stem:st,fut:fu,se,ps};}
  // -(으)세요: форма основы
  function seTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return s+'세요';if(d.t===8)return b+enc(d.l,d.v,0)+'세요';
@@ -128,13 +128,23 @@ const CHK=(()=>{
   const W=[s+'세요',s+'으세요',b+enc(d.l,d.v,0)+'으세요',b+enc(d.l,d.v,8)+'세요'];if(!W.includes(a))return null;
   const N=d.t===0?'После гласной — -세요: ':d.t===8?'Основа на ㄹ: ㄹ выпадает — ':d.t===17?'ㅂ-불규칙: ㅂ → 우 — ':d.t===7?'ㄷ-불규칙: ㄷ → ㄹ — ':d.t===19?'ㅅ-불규칙: ㅅ выпадает — ':'После согласной — -으세요: ';
   return {kind:'se',note:N+c+'.'};}
+ // -(으)ㅂ시다: форма основы
+ function psTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
+  if(d.t===0||d.t===8)return b+enc(d.l,d.v,17)+'시다';
+  if(irr&&d.t===17)return b+enc(d.l,d.v,0)+'웁시다';if(irr&&d.t===7)return b+enc(d.l,d.v,8)+'읍시다';if(irr&&d.t===19)return b+enc(d.l,d.v,0)+'읍시다';
+  return s+'읍시다';}
+ function psRule(a,c){const s=LEX.ps&&LEX.ps[c];if(!s||a===c)return null;const d=dec(s.slice(-1)),b=s.slice(0,-1);
+  const W=[s+'읍시다',s+'습시다',b+enc(d.l,d.v,17)+'시다',b+enc(d.l,d.v,0)+'읍시다',b+enc(d.l,d.v,8)+'읍시다',b+enc(d.l,d.v,0)+'웁시다',b+enc(d.l,d.v,8)+'습시다'];if(!W.includes(a))return null;
+  const irr=!c.startsWith(s);const N=d.t===0?'После гласной — -ㅂ시다: ':d.t===8?'Основа на ㄹ: ㄹ выпадает — ':irr&&d.t===17?'ㅂ-불규칙: ㅂ → 우 — ':irr&&d.t===7?'ㄷ-불규칙: ㄷ → ㄹ — ':irr&&d.t===19?'ㅅ-불규칙: ㅅ выпадает — ':a===s+'습시다'?'После согласной — -읍시다 (не 습시다): ':s+'다 — правильная основа, не меняется: ';
+  return {kind:'ps',note:N+c+'.'};}
  // -(으)ㄹ 거예요: форма перед 거예요
  function futTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
   if(irr&&d.t===17)return b+enc(d.l,d.v,0)+'울';if(irr&&d.t===7)return b+enc(d.l,d.v,8)+'을';if(irr&&d.t===19)return b+enc(d.l,d.v,0)+'을';
   return s+'을';}
  // -(으)ㄹ게요 / -(으)ㄹ래요: форма основы как у 거예요; запись 게요
- function gRule(a,c){for(const suf of ['게요','래요']){if(!c.endsWith(suf)||c.length<3)continue;const pre=c.slice(0,-2);
+ function gRule(a,c){for(const suf of ['게요','래요','까요']){if(!c.endsWith(suf)||c.length<3)continue;const pre=c.slice(0,-2);
+   {const q=a.slice(0,-2),s=LEX.fut&&LEX.fut[pre];if(a.endsWith(suf)&&s&&q===s&&q!==pre)return {kind:'fut',note:'Перед -'+suf+' основа принимает -(으)ㄹ: '+c+'.'};}
    if(suf==='게요'&&a===pre+'께요')return {kind:'fut',note:'Пишется 게요 (читается [께요]): '+c+'.'};
    if(a.endsWith(suf)){const r=fRule(a.slice(0,-2),pre);if(r)return {kind:'fut',note:r.note.replace(pre+' 거예요.',c+'.')};}}
   return null;}
