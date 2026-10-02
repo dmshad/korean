@@ -66,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -117,7 +117,19 @@ const CHK=(()=>{
    if(w.cat==='verb'&&k.endsWith('하다')&&k.length>2)n.add(k.slice(0,-2));
    if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);
     st[sm]={pres:w.forms.pres,past:w.forms.past};f[w.forms.pres]={s:sm,p:0};if(w.forms.past)f[w.forms.past]={s:sm,p:1};}}
-  LEX={nouns:n,form:f,stem:st};}
+  const fu={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;}
+  LEX={nouns:n,form:f,stem:st,fut:fu};}
+ // -(으)ㄹ 거예요: форма перед 거예요
+ function futTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
+  if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
+  if(irr&&d.t===17)return b+enc(d.l,d.v,0)+'울';if(irr&&d.t===7)return b+enc(d.l,d.v,8)+'을';if(irr&&d.t===19)return b+enc(d.l,d.v,0)+'을';
+  return s+'을';}
+ function fRule(a,c){
+  if(/^거예요/.test(c)&&/^(거에요|꺼예요|꺼에요)/.test(a))return {kind:'fut',note:'Пишется 거예요 (читается [꺼예요]).'};
+  const s=LEX.fut&&LEX.fut[c];if(!s||a===c)return null;const l=s.slice(-1),d=dec(l),b=s.slice(0,-1);
+  const W=[s+'을',s+'ㄹ',b+enc(d.l,d.v,0)+'올',b+enc(d.l,d.v,0)+'을',b+enc(d.l,d.v,8)+'을'];if(!W.includes(a))return null;
+  const N=d.t===0?'После гласной — -ㄹ 거예요: ':d.t===8?'Основа на ㄹ — 거예요 сразу: ':d.t===17?'ㅂ-불규칙: перед -을 ㅂ → 우: ':d.t===7?'ㄷ-불규칙: перед -을 ㄷ → ㄹ: ':d.t===19?'ㅅ-불규칙: ㅅ выпадает: ':'После согласной — -을 거예요: ';
+  return {kind:'fut',note:N+c+' 거예요.'};}
  const PP=[['을','를'],['이','가']];
  function stripP(t){for(const[c,v]of PP)for(const q of [c,v]){if(!t.endsWith(q)||t.length<2)continue;const st=t.slice(0,-q.length);
    if(!LEX.nouns.has(st))continue;const need=hasB(st.slice(-1))?c:v;if(q===need)return st;}return t;}
@@ -129,7 +141,7 @@ const CHK=(()=>{
     const e=LEX.stem[sm];if(e){o.push(neg,past?e.past:e.pres);k++;continue;}}
    // 하다-глагол с 안/못 внутри: 운동하지… уже выше; короткое 운동을 못 해요 → частица снимется ниже
    o.push(t);}
-  T=o.filter(t=>t!=='저는'&&t!=='나는').map(t=>{if(t==='저의')return '제';if(t==='나의')return '내';const m=t.match(/^(.+)한테(도|만)?$/);if(m&&LEX.nouns.has(m[1]))return m[1]+'에게'+(m[2]||'');return t;}).map(t=>{if(t.endsWith('의')&&t.length>1&&!LEX.nouns.has(t)&&LEX.nouns.has(t.slice(0,-1)))return t.slice(0,-1);return t;}).map(stripP);
+  T=o.filter(t=>t!=='저는'&&t!=='나는').map(t=>{if(t==='저의')return '제';if(t==='나의')return '내';const m=t.match(/^(.+)한테(도|만)?$/);if(m&&LEX.nouns.has(m[1]))return m[1]+'에게'+(m[2]||'');return t;}).map(t=>{if(t.endsWith('의')&&t.length>1&&!LEX.nouns.has(t)&&LEX.nouns.has(t.slice(0,-1)))return t.slice(0,-1);return t;}).map((t,k,A)=>/^(거예요|거에요|겁니다|겁니까|꺼예요)/.test(A[k+1]||'')?t:stripP(t));
   const r=[];for(let k=0;k<T.length;k++){if(T[k]==='어디에'){r.push('어디');continue;}r.push(T[k]);}
   // 하다-составной без пробела и с 안/못 между: 운동 못 해요 — норма; 못 운동해요 не трогаем
   return r.join(' ');}
