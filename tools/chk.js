@@ -66,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -117,8 +117,17 @@ const CHK=(()=>{
    if(w.cat==='verb'&&k.endsWith('하다')&&k.length>2)n.add(k.slice(0,-2));
    if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);
     st[sm]={pres:w.forms.pres,past:w.forms.past};f[w.forms.pres]={s:sm,p:0};if(w.forms.past)f[w.forms.past]={s:sm,p:1};}}
-  const fu={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;}
-  LEX={nouns:n,form:f,stem:st,fut:fu};}
+  const fu={},se={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;}
+  LEX={nouns:n,form:f,stem:st,fut:fu,se};}
+ // -(으)세요: форма основы
+ function seTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
+  if(d.t===0)return s+'세요';if(d.t===8)return b+enc(d.l,d.v,0)+'세요';
+  if(irr&&d.t===17)return b+enc(d.l,d.v,0)+'우세요';if(irr&&d.t===7)return b+enc(d.l,d.v,8)+'으세요';if(irr&&d.t===19)return b+enc(d.l,d.v,0)+'으세요';
+  return s+'으세요';}
+ function sRule(a,c){const s=LEX.se&&LEX.se[c];if(!s||a===c)return null;const d=dec(s.slice(-1)),b=s.slice(0,-1);
+  const W=[s+'세요',s+'으세요',b+enc(d.l,d.v,0)+'으세요',b+enc(d.l,d.v,8)+'세요'];if(!W.includes(a))return null;
+  const N=d.t===0?'После гласной — -세요: ':d.t===8?'Основа на ㄹ: ㄹ выпадает — ':d.t===17?'ㅂ-불규칙: ㅂ → 우 — ':d.t===7?'ㄷ-불규칙: ㄷ → ㄹ — ':d.t===19?'ㅅ-불규칙: ㅅ выпадает — ':'После согласной — -으세요: ';
+  return {kind:'se',note:N+c+'.'};}
  // -(으)ㄹ 거예요: форма перед 거예요
  function futTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
