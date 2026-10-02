@@ -66,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -124,11 +124,16 @@ const CHK=(()=>{
   if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
   if(irr&&d.t===17)return b+enc(d.l,d.v,0)+'울';if(irr&&d.t===7)return b+enc(d.l,d.v,8)+'을';if(irr&&d.t===19)return b+enc(d.l,d.v,0)+'을';
   return s+'을';}
+ // -(으)ㄹ게요 / -(으)ㄹ래요: форма основы как у 거예요; запись 게요
+ function gRule(a,c){for(const suf of ['게요','래요']){if(!c.endsWith(suf)||c.length<3)continue;const pre=c.slice(0,-2);
+   if(suf==='게요'&&a===pre+'께요')return {kind:'fut',note:'Пишется 게요 (читается [께요]): '+c+'.'};
+   if(a.endsWith(suf)){const r=fRule(a.slice(0,-2),pre);if(r)return {kind:'fut',note:r.note.replace(pre+' 거예요.',c+'.')};}}
+  return null;}
  function fRule(a,c){
   if(/^거예요/.test(c)&&/^(거에요|꺼예요|꺼에요)/.test(a))return {kind:'fut',note:'Пишется 거예요 (читается [꺼예요]).'};
   const s=LEX.fut&&LEX.fut[c];if(!s||a===c)return null;const l=s.slice(-1),d=dec(l),b=s.slice(0,-1);
   const W=[s+'을',s+'ㄹ',b+enc(d.l,d.v,0)+'올',b+enc(d.l,d.v,0)+'을',b+enc(d.l,d.v,8)+'을'];if(!W.includes(a))return null;
-  const N=d.t===0?'После гласной — -ㄹ 거예요: ':d.t===8?'Основа на ㄹ — 거예요 сразу: ':d.t===17?'ㅂ-불규칙: перед -을 ㅂ → 우: ':d.t===7?'ㄷ-불규칙: перед -을 ㄷ → ㄹ: ':d.t===19?'ㅅ-불규칙: ㅅ выпадает: ':'После согласной — -을 거예요: ';
+  const N=d.t===0?'После гласной — -ㄹ: ':d.t===8?'Основа на ㄹ — окончание сразу, без 을: ':d.t===17?'ㅂ-불규칙: перед -을 ㅂ → 우: ':d.t===7?'ㄷ-불규칙: перед -을 ㄷ → ㄹ: ':d.t===19?'ㅅ-불규칙: ㅅ выпадает: ':'После согласной — -을: ';
   return {kind:'fut',note:N+c+' 거예요.'};}
  const PP=[['을','를'],['이','가']];
  function stripP(t){for(const[c,v]of PP)for(const q of [c,v]){if(!t.endsWith(q)||t.length<2)continue;const st=t.slice(0,-q.length);
