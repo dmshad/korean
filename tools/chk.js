@@ -66,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -146,6 +146,12 @@ const CHK=(()=>{
   const W=[s+'으러',s+'러',b+enc(d.l,d.v,0)+'러',b+enc(d.l,d.v,0)+'으러',b+enc(d.l,d.v,8)+'으러',b+enc(d.l,d.v,0)+'우러'];if(!W.includes(a))return null;
   const irr=!c.startsWith(s);const N=d.t===0?'После гласной — -러: ':d.t===8?'Основа на ㄹ — сразу -러, ㄹ остаётся: ':irr&&d.t===17?'ㅂ-불규칙: ㅂ → 우 — ':irr&&d.t===7?'ㄷ-불규칙: ㄷ → ㄹ — ':irr&&d.t===19?'ㅅ-불규칙: ㅅ выпадает — ':a===s+'러'?'После согласной — -으러: ':s+'다 — правильная основа, не меняется: ';
   return {kind:'re',note:N+c+'.'};}
+ // -고: основа без изменений; существительное — 이고
+ function goRule(a,c){if(!c.endsWith('고')||a===c)return null;
+  if(c.endsWith('이고')&&a===c.slice(0,-2)+'고'&&LEX.nouns.has(c.slice(0,-2)))return {kind:'go',note:'После согласной — 이고: '+c+'.'};
+  const s=c.slice(0,-1),e=LEX.stem[s];if(!e)return null;const d=dec(s.slice(-1)),b=s.slice(0,-1),ps=String(e.pres||'').slice(0,-1);
+  const W=[s+'으고',ps+'고',b+enc(d.l,d.v,0)+'고',b+enc(d.l,d.v,8)+'고',b+enc(d.l,d.v,0)+'우고'];if(!W.includes(a))return null;
+  return {kind:'go',note:'-고 — прямо к основе, без изменений (неправильные основы тоже целые): '+c+'.'};}
  // -(으)ㄹ 거예요: форма перед 거예요
  function futTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
