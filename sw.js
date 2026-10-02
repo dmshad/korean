@@ -1,4 +1,4 @@
-const VERSION='2026-10-01.18';
+const VERSION='2026-10-01.19';
 const CACHE='ko-'+VERSION;
 const FILES=['./','./index.html','./manifest.webmanifest','./icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES.map(u=>new Request(u,{cache:'reload'})))));});
