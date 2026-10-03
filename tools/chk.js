@@ -66,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -117,8 +117,8 @@ const CHK=(()=>{
    if(w.cat==='verb'&&k.endsWith('하다')&&k.length>2)n.add(k.slice(0,-2));
    if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);
     st[sm]={pres:w.forms.pres,past:w.forms.past};f[w.forms.pres]={s:sm,p:0};if(w.forms.past)f[w.forms.past]={s:sm,p:1};}}
-  const fu={},se={},ps={},re={},as={},ni={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;const p2=psTok(sm,e.pres);if(p2)ps[p2]=sm;const r2=reTok(sm,e.pres);if(r2)re[r2]=sm;const a2=asTok(sm,e.pres);if(a2&&!as[a2])as[a2]=sm;const n2=niTok(sm,e.pres);if(n2&&!ni[n2])ni[n2]=sm;const n3=String(e.past||'');if(n3.endsWith('어요')&&!ni[n3.slice(0,-2)+'으니까'])ni[n3.slice(0,-2)+'으니까']=sm;}
-  LEX={nouns:n,form:f,stem:st,fut:fu,se,ps,re,as,ni};}
+  const fu={},se={},ps={},re={},as={},ni={},my={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;const p2=psTok(sm,e.pres);if(p2)ps[p2]=sm;const r2=reTok(sm,e.pres);if(r2)re[r2]=sm;const a2=asTok(sm,e.pres);if(a2&&!as[a2])as[a2]=sm;const n2=niTok(sm,e.pres);if(n2&&!ni[n2])ni[n2]=sm;const m2=myTok(sm,e.pres);if(m2&&!my[m2])my[m2]=sm;const n3=String(e.past||'');if(n3.endsWith('어요')&&!ni[n3.slice(0,-2)+'으니까'])ni[n3.slice(0,-2)+'으니까']=sm;}
+  LEX={nouns:n,form:f,stem:st,fut:fu,se,ps,re,as,ni,my};}
  // -(으)세요: форма основы
  function seTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return s+'세요';if(d.t===8)return b+enc(d.l,d.v,0)+'세요';
@@ -186,6 +186,21 @@ const CHK=(()=>{
   if(pr.endsWith('요')&&a===pr.slice(0,-1)+'니까')return {kind:'ni',note:'-(으)니까 — к основе, не к 해요-форме: '+c+'.'};
   const N=d.t===0?'После гласной — -니까: ':d.t===8?'Основа на ㄹ: ㄹ выпадает — ':irr&&d.t===17?'ㅂ-불규칙: ㅂ → 우 — ':irr&&d.t===7?'ㄷ-불규칙: ㄷ → ㄹ — ':irr&&d.t===19?'ㅅ-불규칙: ㅅ выпадает — ':'После согласной — -으니까: ';
   return {kind:'ni',note:N+c+'.'};}
+ // -(으)면: ㄹ остаётся (멀면), ㅂ → 우면, ㄷ → ㄹ으면, ㅅ выпадает; существительное — 이면/면
+ function myTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
+  if(d.t===0||d.t===8)return s+'면';
+  if(irr&&d.t===17)return b+enc(d.l,d.v,0)+'우면';if(irr&&d.t===7)return b+enc(d.l,d.v,8)+'으면';if(irr&&d.t===19)return b+enc(d.l,d.v,0)+'으면';
+  return s+'으면';}
+ function myRule(a,c){if(!c.endsWith('면')||a===c)return null;
+  if(c.endsWith('이면')&&a===c.slice(0,-2)+'면'&&LEX.nouns.has(c.slice(0,-2)))return {kind:'my',note:'После согласной — 이면: '+c+'.'};
+  if(!c.endsWith('이면')&&a===c.slice(0,-1)+'이면'&&LEX.nouns.has(c.slice(0,-1)))return {kind:'my',note:'После гласной — 면: '+c+'.'};
+  const s=LEX.my&&LEX.my[c];if(!s)return null;const e=LEX.stem[s]||{},pr=String(e.pres||'');const d=dec(s.slice(-1)),b=s.slice(0,-1);
+  const W=[s+'면',s+'으면',b+enc(d.l,d.v,0)+'면',b+enc(d.l,d.v,0)+'으면',b+enc(d.l,d.v,8)+'으면',b+enc(d.l,d.v,0)+'우면',pr.endsWith('요')?pr.slice(0,-1)+'면':''].filter(x=>x&&x!==c);
+  if(!W.includes(a))return null;
+  if(pr.endsWith('요')&&a===pr.slice(0,-1)+'면')return {kind:'my',note:'-(으)면 — к основе, не к 해요-форме: '+c+'.'};
+  const irr=!pr.startsWith(s);
+  const N=d.t===0?'После гласной — -면: ':d.t===8?'Основа на ㄹ: ㄹ остаётся, сразу -면 — ':irr&&d.t===17?'ㅂ-불규칙: ㅂ → 우 — ':irr&&d.t===7?'ㄷ-불규칙: ㄷ → ㄹ — ':irr&&d.t===19?'ㅅ-불규칙: ㅅ выпадает — ':'После согласной — -으면: ';
+  return {kind:'my',note:N+c+'.'};}
  // -(으)ㄹ 거예요: форма перед 거예요
  function futTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
