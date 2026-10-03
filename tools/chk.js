@@ -61,12 +61,13 @@ const CHK=(()=>{
   [['습니까','읍니까'],'после согласной — 습니까 (읍니까 — устаревшее написание)']];
  function tokRule(a,c){ // a — ответ, c — верный токен
   if(c.endsWith('요')&&a===c.slice(0,-1))return {kind:'yo',note:'Без 요 получается 반말 (фамильярно). В вежливой речи — '+c+'.'};
+  if(LEX.pt&&LEX.pt[c]){const r=ptRule(a,c);if(r)return r;}
   let p=0;while(p<a.length&&p<c.length&&a[p]===c[p])p++;
   const sa=a.slice(p),sc=c.slice(p),stem=c.slice(0,p);
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c)||roRule(a,c)||ayRule(a,c)||boRule(a,c)||dwRule(a,c)||adRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c)||roRule(a,c)||ayRule(a,c)||boRule(a,c)||dwRule(a,c)||adRule(a,c)||ptRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -111,14 +112,17 @@ const CHK=(()=>{
  /* ---- равнозначные формы (канон) ---- */
  let LEX={nouns:new Set(),form:{},stem:{}};
  // nouns: существительные/местоимения/счётные; form: 가요→{s:'가',p:0}; stem: '가'→{pres:'가요',past:'갔어요'}
- function setLex(D){const n=new Set(['뭐','무엇','누구','이것','그것','저것','여기','거기','저기']),f={},st={};
+ let PTC={};
+ function setLex(D){PTC={};const n=new Set(['뭐','무엇','누구','이것','그것','저것','여기','거기','저기']),f={},st={};
   for(const w of D.words||[]){const k=w.ko;if(/\s/.test(k))continue;
    if(['noun','pron','counter','time','num','question'].includes(w.cat))n.add(k);
    if(w.cat==='verb'&&k.endsWith('하다')&&k.length>2)n.add(k.slice(0,-2));
-   if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);
+   if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);PTC[sm]=w.cat;
     st[sm]={pres:w.forms.pres,past:w.forms.past};f[w.forms.pres]={s:sm,p:0};if(w.forms.past)f[w.forms.past]={s:sm,p:1};}}
   const fu={},se={},ps={},re={},as={},ni={},my={},ay={},bo={},ad={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;const p2=psTok(sm,e.pres);if(p2)ps[p2]=sm;const r2=reTok(sm,e.pres);if(r2)re[r2]=sm;const a2=asTok(sm,e.pres);if(a2&&!as[a2])as[a2]=sm;const n2=niTok(sm,e.pres);if(n2&&!ni[n2])ni[n2]=sm;const m2=myTok(sm,e.pres);if(m2&&!my[m2])my[m2]=sm;const y2=asTok(sm,e.pres);if(y2){const yk=y2.slice(0,-1)+'야',bk=y2.slice(0,-1);if(!ay[yk])ay[yk]=sm;if(!bo[bk])bo[bk]=sm;if(!ad[bk+'도'])ad[bk+'도']=sm;}const n3=String(e.past||'');if(n3.endsWith('어요')&&!ni[n3.slice(0,-2)+'으니까'])ni[n3.slice(0,-2)+'으니까']=sm;}
-  LEX={nouns:n,form:f,stem:st,fut:fu,se,ps,re,as,ni,my,ay,bo,ad};}
+  const pt={};for(const [sm,cat] of Object.entries(PTC)){const e=st[sm];if(!e)continue;for(const [tk,kd] of ptToks(sm,e.pres,cat))(pt[tk]=pt[tk]||[]).push({s:sm,k:kd,cat});}
+  for(const k in pt)pt[k].sort((x,y)=>(dec(y.s.slice(-1)).t===8)-(dec(x.s.slice(-1)).t===8));
+  LEX={nouns:n,form:f,stem:st,fut:fu,se,ps,re,as,ni,my,ay,bo,ad,pt};}
  // -(으)세요: форма основы
  function seTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return s+'세요';if(d.t===8)return b+enc(d.l,d.v,0)+'세요';
@@ -222,6 +226,26 @@ const CHK=(()=>{
   return {kind:'ad',note:'-아도/어도 — 해요-форма без 요 + 도: '+(e.pres||'')+' → '+c+'.'};}
  function dwRule(a,c){const M={'돼요':['되요'],'됐어요':['됬어요'],'돼서':['되서'],'돼':['되']};
   if(M[c]&&M[c].includes(a))return {kind:'dw',note:'되어 сливается в 돼: '+c+' (не '+a+').'};return null;}
+ // -(으)ㄴ/는 (определение): 형용사 -(으)ㄴ (있다/없다 — 는), глагол наст. -는, прош. -(으)ㄴ
+ function ptN(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
+  if(d.t===0)return b+enc(d.l,d.v,4);if(d.t===8)return b+enc(d.l,d.v,4);
+  if(irr&&d.t===17)return b+enc(d.l,d.v,0)+'운';if(irr&&d.t===7)return b+enc(d.l,d.v,8)+'은';if(irr&&d.t===19)return b+enc(d.l,d.v,0)+'은';
+  return s+'은';}
+ function ptNeun(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l);if(d.t===8)return s.slice(0,-1)+enc(d.l,d.v,0)+'는';return s+'는';}
+ function ptToks(s,p,cat){if(/(있|없)$/.test(s))return [[s+'는','an']];
+  if(cat==='adj'){const t=ptN(s,p);return t?[[t,'adj']]:[];}
+  const a=ptNeun(s),b=ptN(s,p);return [a?[a,'pres']:null,b?[b,'past']:null].filter(Boolean);}
+ function ptRule(a,c){const E=LEX.pt&&LEX.pt[c];if(!E||a===c)return null;for(const e of E){const r=ptOne(a,c,e);if(r)return r;}return null;}
+ function ptOne(a,c,e){const s=e.s,d=dec(s.slice(-1)),b=s.slice(0,-1),st=LEX.stem[s]||{};
+  const nN=ptN(s,st.pres),nNeun=ptNeun(s);
+  if(e.k==='adj'&&a===s+'는')return {kind:'pt',note:'형용사 перед существительным — -(으)ㄴ, не -는: '+c+'.'};
+  if(e.k==='an'&&(a===s+'은'||a===b+enc(d.l,d.v,4)))return {kind:'pt',note:'있다/없다 (맛있다, 재미있다…) — -는: '+c+'.'};
+  if(e.k==='pres'&&a===nN)return {kind:'pt',note:'Сейчас, обычно — -는: '+c+'; '+nN+' — прошедшее.'};
+  if(e.k==='past'&&a===nNeun)return {kind:'pt',note:'Прошедшее — -(으)ㄴ: '+c+'; '+nNeun+' — сейчас, обычно.'};
+  const W=[s+'은',s+'는',s+'ㄴ',b+enc(d.l,d.v,0)+'은',b+enc(d.l,d.v,0)+'는',b+enc(d.l,d.v,8)+'는',b+enc(d.l,d.v,0)+'운',s+'운',String(st.pres||'').slice(0,-1)+'ㄴ'].filter(x=>x!==c);
+  if(!W.includes(a))return null;const irr=!String(st.pres||'').startsWith(s);
+  const N=d.t===8?'Основа на ㄹ: ㄹ выпадает — ':irr&&d.t===17?'ㅂ-불규칙: ㅂ → 우 — ':irr&&d.t===7?'ㄷ-불규칙: ㄷ → ㄹ — ':irr&&d.t===19?'ㅅ-불규칙: ㅅ выпадает — ':d.t===0?'После гласной — ㄴ / 는: ':'После согласной — 은 / 는: ';
+  return {kind:'pt',note:N+c+'.'};}
  // -(으)ㄹ 거예요: форма перед 거예요
  function futTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
