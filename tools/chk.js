@@ -67,7 +67,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c)||roRule(a,c)||ayRule(a,c)||boRule(a,c)||dwRule(a,c)||adRule(a,c)||ptRule(a,c)||pfRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c)||roRule(a,c)||ayRule(a,c)||boRule(a,c)||dwRule(a,c)||adRule(a,c)||ptRule(a,c)||pfRule(a,c)||kiRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -236,14 +236,21 @@ const CHK=(()=>{
   if(cat==='adj'){const t=ptN(s,p);return t?[[t,'adj']]:[];}
   const a=ptNeun(s),b=ptN(s,p);return [a?[a,'pres']:null,b?[b,'past']:null].filter(Boolean);}
  function ptRule(a,c){const E=LEX.pt&&LEX.pt[c];if(!E||a===c)return null;for(const e of E){const r=ptOne(a,c,e);if(r)return r;}return null;}
+ // -기 (-기 전에): прямо к основе
+ function kiRule(a,c){if(!c.endsWith('기')||a===c)return null;const s=c.slice(0,-1),e=LEX.stem[s];if(!e)return null;const d=dec(s.slice(-1)),pr=String(e.pres||''),pa=String(e.past||'');
+  const W=[s+'으기',pr.endsWith('요')?pr.slice(0,-1)+'기':'',pa.endsWith('어요')?pa.slice(0,-2)+'기':'',s.slice(0,-1)+enc(d.l,d.v,8)+'기'].filter(x=>x&&x!==c);
+  if(!W.includes(a))return null;
+  if(pa.endsWith('어요')&&a===pa.slice(0,-2)+'기')return {kind:'ki',note:'Перед -기 전에 время не ставится: '+c+'.'};
+  return {kind:'ki',note:'-기 — прямо к основе, без изменений: '+c+'.'};}
  function pfRule(a,c){const s=LEX.fut&&LEX.fut[c];if(!s||a===c)return null;const st=LEX.stem[s]||{};
   const n1=ptNeun(s),n2=ptN(s,st.pres);if(a!==n1&&a!==n2)return null;
-  return {kind:'pt',note:'То, что предстоит (будущее, «чтобы …») — -(으)ㄹ: '+c+'; '+a+' — '+(a===n1&&PTC[s]!=='adj'?'сейчас, обычно':'прошедшее / признак')+'.'};}
+  return {kind:'pt',note:'Нужна форма -(으)ㄹ (перед 때; предстоящее, «чтобы …»): '+c+'; '+a+' — '+(a===n1&&PTC[s]!=='adj'?'сейчас, обычно':'прошедшее / признак')+'.'};}
  function ptOne(a,c,e){const s=e.s,d=dec(s.slice(-1)),b=s.slice(0,-1),st=LEX.stem[s]||{};
   const nN=ptN(s,st.pres),nNeun=ptNeun(s);
   if(e.k==='adj'&&a===s+'는')return {kind:'pt',note:'형용사 перед существительным — -(으)ㄴ, не -는: '+c+'.'};
   if(e.k==='an'&&(a===s+'은'||a===b+enc(d.l,d.v,4)))return {kind:'pt',note:'있다/없다 (맛있다, 재미있다…) — -는: '+c+'.'};
   if(e.k==='pres'&&a===nN)return {kind:'pt',note:'Сейчас, обычно — -는: '+c+'; '+nN+' — прошедшее.'};
+  if(e.k==='past'&&LEX.fut){const fu=Object.keys(LEX.fut).find(k=>LEX.fut[k]===s);if(fu&&a===fu)return {kind:'pt',note:'Прошедшее (и перед 후에) — -(으)ㄴ: '+c+'; '+fu+' — будущее.'};}
   if(e.k==='past'&&a===nNeun)return {kind:'pt',note:'Прошедшее — -(으)ㄴ: '+c+'; '+nNeun+' — сейчас, обычно.'};
   const W=[s+'은',s+'는',s+'ㄴ',b+enc(d.l,d.v,0)+'은',b+enc(d.l,d.v,0)+'는',b+enc(d.l,d.v,8)+'는',b+enc(d.l,d.v,0)+'운',s+'운',String(st.pres||'').slice(0,-1)+'ㄴ'].filter(x=>x!==c);
   if(!W.includes(a))return null;const irr=!String(st.pres||'').startsWith(s);
