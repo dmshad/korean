@@ -66,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -117,8 +117,8 @@ const CHK=(()=>{
    if(w.cat==='verb'&&k.endsWith('하다')&&k.length>2)n.add(k.slice(0,-2));
    if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);
     st[sm]={pres:w.forms.pres,past:w.forms.past};f[w.forms.pres]={s:sm,p:0};if(w.forms.past)f[w.forms.past]={s:sm,p:1};}}
-  const fu={},se={},ps={},re={},as={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;const p2=psTok(sm,e.pres);if(p2)ps[p2]=sm;const r2=reTok(sm,e.pres);if(r2)re[r2]=sm;const a2=asTok(sm,e.pres);if(a2&&!as[a2])as[a2]=sm;}
-  LEX={nouns:n,form:f,stem:st,fut:fu,se,ps,re,as};}
+  const fu={},se={},ps={},re={},as={},ni={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;const p2=psTok(sm,e.pres);if(p2)ps[p2]=sm;const r2=reTok(sm,e.pres);if(r2)re[r2]=sm;const a2=asTok(sm,e.pres);if(a2&&!as[a2])as[a2]=sm;const n2=niTok(sm,e.pres);if(n2&&!ni[n2])ni[n2]=sm;const n3=String(e.past||'');if(n3.endsWith('어요')&&!ni[n3.slice(0,-2)+'으니까'])ni[n3.slice(0,-2)+'으니까']=sm;}
+  LEX={nouns:n,form:f,stem:st,fut:fu,se,ps,re,as,ni};}
  // -(으)세요: форма основы
  function seTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return s+'세요';if(d.t===8)return b+enc(d.l,d.v,0)+'세요';
@@ -170,6 +170,22 @@ const CHK=(()=>{
   const W=[s+'아서',s+'어서',s+'서',s+'으서',s+'여서',b+enc(d.l,d.v,0)+'어서',b+enc(d.l,d.v,0)+'아서',b+enc(d.l,d.v,0)+'워서'].filter(x=>x!==c&&!ok.has(x));
   if(!W.includes(a))return null;
   return {kind:'as',note:'-아서/어서 — 해요-форма без 요 + 서: '+(e.pres||'')+' → '+c+'.'};}
+ // -(으)니까: форма основы (ㄹ выпадает, ㅂ → 우, ㄷ → ㄹ, ㅅ выпадает); прошедшее — 았/었으니까; существительное — 이니까/니까
+ function niTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
+  if(d.t===0)return s+'니까';if(d.t===8)return b+enc(d.l,d.v,0)+'니까';
+  if(irr&&d.t===17)return b+enc(d.l,d.v,0)+'우니까';if(irr&&d.t===7)return b+enc(d.l,d.v,8)+'으니까';if(irr&&d.t===19)return b+enc(d.l,d.v,0)+'으니까';
+  return s+'으니까';}
+ function niRule(a,c){if(!c.endsWith('니까')||a===c)return null;
+  if(c.endsWith('이니까')&&a===c.slice(0,-3)+'니까'&&LEX.nouns.has(c.slice(0,-3)))return {kind:'ni',note:'После согласной — 이니까: '+c+'.'};
+  if(!c.endsWith('이니까')&&a===c.slice(0,-2)+'이니까'&&LEX.nouns.has(c.slice(0,-2)))return {kind:'ni',note:'После гласной — 니까: '+c+'.'};
+  const s=LEX.ni&&LEX.ni[c];if(!s)return null;const e=LEX.stem[s]||{};
+  if(c.endsWith('으니까')&&String(e.past||'').slice(0,-2)===c.slice(0,-3)){if(a===c.slice(0,-3)+'니까')return {kind:'ni',note:'После прошедшего — 으니까: '+c+'.'};return null;}
+  const d=dec(s.slice(-1)),b=s.slice(0,-1),pr=String(e.pres||'');
+  const W=[s+'니까',s+'으니까',b+enc(d.l,d.v,0)+'니까',b+enc(d.l,d.v,0)+'으니까',b+enc(d.l,d.v,8)+'으니까',b+enc(d.l,d.v,0)+'우니까',pr.endsWith('요')?pr.slice(0,-1)+'니까':''].filter(x=>x&&x!==c);
+  if(!W.includes(a))return null;const irr=!pr.startsWith(s);
+  if(pr.endsWith('요')&&a===pr.slice(0,-1)+'니까')return {kind:'ni',note:'-(으)니까 — к основе, не к 해요-форме: '+c+'.'};
+  const N=d.t===0?'После гласной — -니까: ':d.t===8?'Основа на ㄹ: ㄹ выпадает — ':irr&&d.t===17?'ㅂ-불규칙: ㅂ → 우 — ':irr&&d.t===7?'ㄷ-불규칙: ㄷ → ㄹ — ':irr&&d.t===19?'ㅅ-불규칙: ㅅ выпадает — ':'После согласной — -으니까: ';
+  return {kind:'ni',note:N+c+'.'};}
  // -(으)ㄹ 거예요: форма перед 거예요
  function futTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
