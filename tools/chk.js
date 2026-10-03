@@ -291,6 +291,17 @@ const CHK=(()=>{
   return r.join(' ');}
  /* ---- главная ---- */
  // item: {ko, alt[], traps[{a,why}]}; ответ пользователя
+
+ // 반말: эталон в 반말 (ни одно слово не кончается на 요), ответ отличается только вежливостью
+ const BAN1={'나는':'저는','나도':'저도','나를':'저를','나만':'저만','내가':'제가','내':'제','나한테':'저한테','나':'저','나하고':'저하고','나보다':'저보다','나처럼':'저처럼','우리':'저희'};
+ function banRule(a,x){const A=a.split(' '),X=x.split(' ');if(A.length!==X.length)return null;if(X.some(t=>/요$/.test(t)))return null;
+  let n=0,yo=0,pr=0;for(let i=0;i<X.length;i++){const p=A[i],q=X[i];if(p===q)continue;
+   if(q.endsWith('이야')&&p===q.slice(0,-2)+'야'&&n===0)return 'После согласной — 이야: '+q+'.';
+   if(q.endsWith('야')&&!q.endsWith('이야')&&p===q.slice(0,-1)+'이야'&&n===0)return 'После гласной — 야: '+q+'.';
+   if(p===q+'요'||(q.endsWith('이야')&&p===q.slice(0,-2)+'이에요')||(q.endsWith('야')&&!q.endsWith('이야')&&p===q.slice(0,-1)+'예요')||(q.endsWith('줘')&&p===q.slice(0,-1)+'주세요')||(q.endsWith('아니야')&&p===q.slice(0,-3)+'아니에요')){n++;yo++;continue;}
+   if(BAN1[q]===p){n++;pr++;continue;}return null;}
+  if(!n)return null;
+  return (yo?'Здесь 반말 — без вежливого окончания (요, 이에요/예요, 주세요): '+x+'.':'')+(pr?(yo?' ':'')+'В 반말 — 나/내, не 저/제: '+x+'.':'');}
  function check(item,ans){
   const raw=String(ans||'').trim();
   if(!raw||raw==='-')return {v:'bad',kind:'empty',best:expand(item.ko)[0]||'',note:''};
@@ -303,6 +314,8 @@ const CHK=(()=>{
   for(const tr of item.traps||[])for(const x of expand(tr.a))if(nsp(x)===an){
    const best=V.slice().sort((p,q)=>lev(jamo(nsp(p)),jamo(an))-lev(jamo(nsp(q)),jamo(an)))[0];
    return {v:'bad',kind:'trap',best,note:tr.why,d:diff(a,best)};}
+  // 반말: эталон без 요, ответ — вежливый (요, 이에요, 주세요, 저/제)
+  for(const x of V){const r=banRule(a,x);if(r)return {v:'bad',kind:'ban',best:x,note:r,d:diff(a,x)};}
   const ca=item.strict?a:canon(a);if(!item.strict)for(const x of V)if(canon(x)===ca)return {v:'ok',kind:'eq',best:x};
   for(const x of V){const r=rules(a,x);if(r)return {v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
   if(!item.strict)for(const x of V){const r=rules(ca,canon(x));if(r)return {v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
