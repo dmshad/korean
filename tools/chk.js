@@ -216,14 +216,15 @@ const CHK=(()=>{
  function gRule(a,c){for(const suf of ['게요','래요','까요']){if(!c.endsWith(suf)||c.length<3)continue;const pre=c.slice(0,-2);
    {const q=a.slice(0,-2),s=LEX.fut&&LEX.fut[pre];if(a.endsWith(suf)&&s&&q===s&&q!==pre)return {kind:'fut',note:'Перед -'+suf+' основа принимает -(으)ㄹ: '+c+'.'};}
    if(suf==='게요'&&a===pre+'께요')return {kind:'fut',note:'Пишется 게요 (читается [께요]): '+c+'.'};
-   if(a.endsWith(suf)){const r=fRule(a.slice(0,-2),pre);if(r)return {kind:'fut',note:r.note.replace(pre+' 거예요.',c+'.')};}}
+   if(a.endsWith(suf)){const r=fRule(a.slice(0,-2),pre);if(r)return {kind:'fut',note:r.note.replace(/ \(как в .*\)\.$/,'.').replace(pre+'.',c+'.')};}}
   return null;}
  function fRule(a,c){
   if(/^거예요/.test(c)&&/^(거에요|꺼예요|꺼에요)/.test(a))return {kind:'fut',note:'Пишется 거예요 (читается [꺼예요]).'};
   const s=LEX.fut&&LEX.fut[c];if(!s||a===c)return null;const l=s.slice(-1),d=dec(l),b=s.slice(0,-1);
-  const W=[s+'을',s+'ㄹ',b+enc(d.l,d.v,0)+'올',b+enc(d.l,d.v,0)+'을',b+enc(d.l,d.v,8)+'을'];if(!W.includes(a))return null;
+  const W=[s+'을',s+'ㄹ',b+enc(d.l,d.v,0)+'올',b+enc(d.l,d.v,0)+'을',b+enc(d.l,d.v,8)+'을',s].filter(x=>x!==c);if(!W.includes(a))return null;
+  if(a===s)return {kind:'fut',note:'Основа принимает -(으)ㄹ: '+c+' (как в '+c+' 거예요, '+c+' 수 있어요).'};
   const N=d.t===0?'После гласной — -ㄹ: ':d.t===8?'Основа на ㄹ — окончание сразу, без 을: ':d.t===17?'ㅂ-불규칙: перед -을 ㅂ → 우: ':d.t===7?'ㄷ-불규칙: перед -을 ㄷ → ㄹ: ':d.t===19?'ㅅ-불규칙: ㅅ выпадает: ':'После согласной — -을: ';
-  return {kind:'fut',note:N+c+' 거예요.'};}
+  return {kind:'fut',note:N+c+' (как в '+c+' 거예요, '+c+' 수 있어요).'};}
  const PP=[['을','를'],['이','가']];
  function stripP(t){for(const[c,v]of PP)for(const q of [c,v]){if(!t.endsWith(q)||t.length<2)continue;const st=t.slice(0,-q.length);
    if(!LEX.nouns.has(st))continue;const need=hasB(st.slice(-1))?c:v;if(q===need)return st;}return t;}
