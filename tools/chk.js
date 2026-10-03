@@ -66,7 +66,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c)||roRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -201,6 +201,12 @@ const CHK=(()=>{
   const irr=!pr.startsWith(s);
   const N=d.t===0?'После гласной — -면: ':d.t===8?'Основа на ㄹ: ㄹ остаётся, сразу -면 — ':irr&&d.t===17?'ㅂ-불규칙: ㅂ → 우 — ':irr&&d.t===7?'ㄷ-불규칙: ㄷ → ㄹ — ':irr&&d.t===19?'ㅅ-불규칙: ㅅ выпадает — ':'После согласной — -으면: ';
   return {kind:'my',note:N+c+'.'};}
+ // (으)로: после гласной и ㄹ — 로, после остальных согласных — 으로
+ function roRule(a,c){if(!c.endsWith('로')||a===c)return null;
+  if(c.endsWith('으로')&&a===c.slice(0,-2)+'로'&&LEX.nouns.has(c.slice(0,-2)))return {kind:'ro',note:'После согласной — 으로: '+c+'.'};
+  if(!c.endsWith('으로')&&a===c.slice(0,-1)+'으로'){const n=c.slice(0,-1);if(!LEX.nouns.has(n))return null;const l=n.slice(-1);
+   return {kind:'ro',note:(isH(l)&&dec(l).t===8?'После ㄹ — просто 로: ':'После гласной — 로: ')+c+'.'};}
+  return null;}
  // -(으)ㄹ 거예요: форма перед 거예요
  function futTok(s,p){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),b=s.slice(0,-1),irr=!String(p||'').startsWith(s);
   if(d.t===0)return b+enc(d.l,d.v,8);if(d.t===8)return s;
