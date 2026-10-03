@@ -405,8 +405,8 @@ ${rw.map(f).join('\n')||'—'}`;
  document.querySelectorAll('#tst .chip').forEach(x=>x.classList.toggle('on',!!x.dataset.ws));
  $('tcard').hidden=true;$('tsum').hidden=false;$('ta').blur();
  $('tsum').innerHTML=`<div class="trn"><div class="tmeta">Итог словарной темы</div><div class="tp">${th.length-tw.length} из ${th.length}</div>
- <p class="gp">Скопируй и вставь в словарный чат с командой «закрой тему N». Слово темы попадает в «плохо помню» после ошибки или подсказки и выходит после двух верных ответов подряд.</p>
- <textarea id="wsum" readonly rows="12">${esc(t)}</textarea><div class="tbtns"><button class="tb pri" data-wc="1">Скопировать</button></div></div>`;hh();}
+ <p class="gp">Слово темы попадает в «плохо помню» после ошибки или подсказки и выходит после двух верных ответов подряд. Чувствуешь себя уверенно — открывай следующую тему; если нет — повтори этапы.</p>
+ <textarea id="wsum" readonly rows="12">${esc(t)}</textarea>${courseNextHTML()}<div class="tbtns"><button class="tb" data-wc="1">Скопировать</button></div></div>`;hh();}
 $('list').addEventListener('click',e=>{const b=e.target.closest('#tsum [data-wc]');if(!b)return;const t=$('wsum');t.select();
  try{navigator.clipboard.writeText(t.value).then(()=>{b.textContent='Скопировано';},()=>{b.textContent='Выдели и скопируй вручную';});}catch(x){b.textContent='Выдели и скопируй вручную';}});
 $('tdir').onclick=()=>{if(!TREADY)return;if(S.app==='rev'&&(S.rtab==='n'||S.rtab==='c'))return xDir();if(S.app==='rev'&&S.rtab==='g')return grDir();if(S.app==='rev'){ST.rd=ST.rd==='rk'?'kr':ST.rd==='kr'?'au':'rk';saveST();$('list').innerHTML='';scrollTo(0,0);return render();}const s=SS(),n=sessFor(s.stage,s.dir==='rk'?'kr':'rk');if(S.app==='rev')ST.rsess=n;else ST.sess.by[s.stage]=n;saveST();updT(true);};
@@ -722,6 +722,15 @@ ${ctx}
 ВОПРОС
 ${q}`,{cache:false});it.a=String(a.text||'').trim();}
  catch(e){it.err=emsg(e);}finally{delete GR.qa[p.id];saveST();if(exMode())exUpd();}}
+/* «Открыть следующую тему» — на экране итога текущей темы (ученик решает сам; двойное нажатие) */
+let CNX=0;
+function courseNextHTML(){if(typeof COURSE!=='object'||!COURSE.on||COURSE.view)return '';
+ const nx=COURSE.steps.slice(COURSE.idx+1).find(x=>COURSE.loaded(x));
+ if(!nx)return `<p class="gp" style="color:var(--mut)">Следующая тема появится с новой версией приложения.</p>`;
+ return `<div class="tbtns"><button class="tb ${CNX?'warn':'pri'}" data-cnext="1">${CNX?'Точно? Нажми ещё раз':'Тема пройдена — открыть следующую'}</button></div><p class="gp" style="color:var(--mut)">Дальше: ${esc(COURSE.title(nx))}</p>`;}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cnext]');if(!b)return;e.preventDefault();e.stopPropagation();
+ if(!CNX){CNX=1;b.textContent='Точно? Нажми ещё раз';b.classList.remove('pri');b.classList.add('warn');setTimeout(()=>{if(CNX){CNX=0;if(b.isConnected){b.textContent='Тема пройдена — открыть следующую';b.classList.remove('warn');b.classList.add('pri');}}},4000);return;}
+ CNX=0;const nx=COURSE.steps.slice(COURSE.idx+1).find(x=>COURSE.loaded(x));if(!nx)return;COURSE.setView(null);COURSE.set(nx.id);reloadApp();},true);
 function lesSummary(){const L=LES(),rows=[],bad=[];
  for(const st of LSTG){if(st.kind==='end')continue;const s=L.by[st.id];if(!s)continue;let n=0,ok=0,tot=0;
   for(const i in s.res){n++;s.res[i].forEach((r,k)=>{tot++;if(r.v==='ok'||r.v==='typo')ok++;else if(r.v==='bad')bad.push({st,i:+i,x:s.bl[i][k],r,a:((s.ans[i]||[])[k]||'').trim(),s});});}
@@ -737,8 +746,8 @@ function lesSummary(){const L=LES(),rows=[],bad=[];
 Ошибки:
 ${bad.map(b=>`- [${b.st.label}] ${b.s.dir==='rk'?b.x.ru:b.x.ko} → ${b.a||'—'} | верно: ${b.r.fix||(b.s.dir==='rk'?b.x.ko:b.x.ru)}${b.r.note?' | '+b.r.note:''}`).join('\n')||'—'}`;
  return `<div class="tmeta">${GL(CURG)} · итог</div><div class="gtitle">${esc(CURG.title)}</div>
- <p class="gp">Скопируй текст и вставь в учебный чат с командой «${CURG.norev?'прошёл '+GL(CURG).toLowerCase():'прошёл грамматику '+CURG.n}».</p>
- <textarea id="gsum" readonly rows="12">${esc(t)}</textarea><div class="tbtns">${btn('gcopy','Скопировать',1)}</div>`;}
+ <p class="gp">Посмотри итог и ошибки. Чувствуешь себя уверенно — открывай следующую тему; если нет — вернись к этапам, где были ошибки.</p>
+ <textarea id="gsum" readonly rows="12">${esc(t)}</textarea>${courseNextHTML()}<div class="tbtns">${btn('gcopy','Скопировать',0)}</div>`;}
 function lesHTML(){const L=LES();$('tdir').hidden=true;
  if(!L){$('tst').hidden=true;$('tcnt').textContent='';return `<div class="empty">Текущей грамматической темы с частями нет.</div>`;}
  $('tst').hidden=false;
