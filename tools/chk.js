@@ -67,7 +67,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
-  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c)||roRule(a,c)||ayRule(a,c)||boRule(a,c)||dwRule(a,c)||adRule(a,c)||ptRule(a,c);}
+  return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c)||roRule(a,c)||ayRule(a,c)||boRule(a,c)||dwRule(a,c)||adRule(a,c)||ptRule(a,c)||pfRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
  function bForms(s){const l=s.slice(-1);if(!l||!isH(l))return null;const d=dec(l),h=s.slice(0,-1),z=h+enc(d.l,d.v,0);
@@ -236,6 +236,9 @@ const CHK=(()=>{
   if(cat==='adj'){const t=ptN(s,p);return t?[[t,'adj']]:[];}
   const a=ptNeun(s),b=ptN(s,p);return [a?[a,'pres']:null,b?[b,'past']:null].filter(Boolean);}
  function ptRule(a,c){const E=LEX.pt&&LEX.pt[c];if(!E||a===c)return null;for(const e of E){const r=ptOne(a,c,e);if(r)return r;}return null;}
+ function pfRule(a,c){const s=LEX.fut&&LEX.fut[c];if(!s||a===c)return null;const st=LEX.stem[s]||{};
+  const n1=ptNeun(s),n2=ptN(s,st.pres);if(a!==n1&&a!==n2)return null;
+  return {kind:'pt',note:'То, что предстоит (будущее, «чтобы …») — -(으)ㄹ: '+c+'; '+a+' — '+(a===n1&&PTC[s]!=='adj'?'сейчас, обычно':'прошедшее / признак')+'.'};}
  function ptOne(a,c,e){const s=e.s,d=dec(s.slice(-1)),b=s.slice(0,-1),st=LEX.stem[s]||{};
   const nN=ptN(s,st.pres),nNeun=ptNeun(s);
   if(e.k==='adj'&&a===s+'는')return {kind:'pt',note:'형용사 перед существительным — -(으)ㄴ, не -는: '+c+'.'};
