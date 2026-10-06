@@ -131,9 +131,8 @@ $('jump').onclick=e=>{const b=e.target.closest('button');if(b)document.getElemen
 $('list').onclick=e=>{const kb=e.target.closest('.wkb');if(kb){togWeak(kb.dataset.wk);render();return;}const eb=e.target.closest('.eye');
  if(eb){const id=eb.dataset.e;S.open.has(id)?S.open.delete(id):S.open.add(id);render();return;}
  const r=e.target.closest('.row');if(r)openCard(r.dataset.id);};
-let KV=null;function voice(){if(!window.speechSynthesis)return null;if(!KV)KV=speechSynthesis.getVoices().find(v=>/^ko/i.test(v.lang))||null;return KV;}
-if(window.speechSynthesis)speechSynthesis.onvoiceschanged=()=>{KV=null;voice();};
-function say(t){if(!window.speechSynthesis)return;speechSynthesis.cancel();t=String(t||'').replace(/[()]/g,'');const u=new SpeechSynthesisUtterance(t);u.lang=LANG.tts;u.rate=rate();const v=voice();if(v)u.voice=v;speechSynthesis.speak(u);}
+// голос не задаём: по u.lang система берёт голос, выбранный в настройках устройства
+function say(t){if(!window.speechSynthesis)return;speechSynthesis.cancel();t=String(t||'').replace(/[()]/g,'');const u=new SpeechSynthesisUtterance(t);u.lang=LANG.tts;u.rate=rate();speechSynthesis.speak(u);}
 function sec(t,b){return b?`<div class="sec"><b>${t}</b>${b}</div>`:'';}
 function openCard(id){const w=BY[id];if(!w)return;
  const notes=(w.notes||[]).map(n=>D.notes[n]).filter(Boolean).map(t=>`<p>${esc(t)}</p>`).join('');
