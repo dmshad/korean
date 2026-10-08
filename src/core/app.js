@@ -622,8 +622,10 @@ function exSelf(k,v){const s=EXA();if(!s||!s.res[s.bi])return;const r=s.res[s.bi
  if(r.dsp&&s.dir!=='kr')(ST.disp=ST.disp||[]).push({ts:Date.now(),t:x.t,u:x.u||'',bid:x.bid||'',ru:x.ru,ko:x.ko,a:((s.ans[s.bi]||[])[k]||'').trim(),v});
  saveST();exUpd();}
 function ruH(t){return esc(t).replace(/\((?:[^()]|\([^()]*\))*\)/g,m=>`<span class="ctx">${m}</span>`);}
+// КОР→РУС: ситуация из начала русской фразы — «(Просишь друга)» — видна и над корейской
+function koH(x){const m=String(x.ru||'').match(/^\s*(\([^()]*\))/);return (m?`<span class="ctx">${esc(m[1])}</span> `:'')+esc(x.ko);}
 function unkHTML(s,i,k,x,r,u,rk){const ref=rk?(r.fix||x.ko):x.ru;
- return `<div class="gi"><div class="gq sm${rk?'':' k'}"${rk?'':` data-say="${esc(x.ko)}"`}><span class="gk">${k+1}</span>${rk?ruH(x.ru):esc(x.ko)}</div>
+ return `<div class="gi"><div class="gq sm${rk?'':' k'}"${rk?'':` data-say="${esc(x.ko)}"`}><span class="gk">${k+1}</span>${rk?ruH(x.ru):koH(x)}</div>
  <div class="gv unk">${rk?markDiff(ref,u,'gdx'):esc(u)} <span class="gvt">${rk?'не распознано':'сверь сам'}</span></div>
  <div class="gref"${rk?` data-say="${esc(ref)}"`:''}>${rk?'Ближайший эталон: '+markDiff(u,ref):'Эталон: '+esc(ref)}</div>
  ${rk?`<div class="gunk">Автоматически не распознано. Если твой вариант тоже верен — засчитай.</div>`:''}
@@ -667,7 +669,7 @@ function blockHTML(s,title,foot){if(s.kind==='les'&&!s.bl[s.bi]){const x=lesStat
  const a=s.ans[i]||[];let h='';
  if(s.dir==='au')return auBlockHTML(s,it,rs,a,title,foot,gc,ce);
  if(!rs){h=`<div class="tmeta">${title} · ${rk?'переведи на корейский':'переведи на русский'}</div>`+it.map((x,k)=>
-   `<div class="gi"><div class="gq${rk?'':' k'}"${rk?'':` data-say="${esc(x.ko)}"`}><span class="gk">${k+1}</span>${rk?ruH(x.ru):esc(x.ko)}</div>
+   `<div class="gi"><div class="gq${rk?'':' k'}"${rk?'':` data-say="${esc(x.ko)}"`}><span class="gk">${k+1}</span>${rk?ruH(x.ru):koH(x)}</div>
    <textarea class="gin" rows="1" data-k="${k}" lang="${rk?'ko':'ru'}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="${k<it.length-1?'next':'done'}"${gc?' disabled':''}>${esc(a[k]||'')}</textarea></div>`).join('');
   const n=it.filter((x,k)=>(a[k]||'').trim()).length;
   h+=ce?`<div class="tres bad">${esc(ce)}</div>`:'';
@@ -677,7 +679,7 @@ function blockHTML(s,title,foot){if(s.kind==='les'&&!s.bl[s.bi]){const x=lesStat
  h=`<div class="tmeta">${title} · проверено</div><div class="tp">${ok} из ${rs.length}${nu?` · ждут решения: ${nu}`:''}</div>`+it.map((x,k)=>{const r=rs[k],u=(a[k]||'').trim(),bad=r.v==='bad';
   if(r.v==='unk')return unkHTML(s,i,k,x,r,u,rk);
   const ref=rk?x.ko:x.ru,fx=r.fix||ref,wk=s.id+'|'+i+'|'+k;
-  return `<div class="gi"><div class="gq sm${rk?'':' k'}"${rk?'':` data-say="${esc(x.ko)}"`}><span class="gk">${k+1}</span>${rk?ruH(x.ru):esc(x.ko)}</div>
+  return `<div class="gi"><div class="gq sm${rk?'':' k'}"${rk?'':` data-say="${esc(x.ko)}"`}><span class="gk">${k+1}</span>${rk?ruH(x.ru):koH(x)}</div>
   <div class="gv ${bad?'bad':'ok'}">${bad&&rk&&u&&u!=='-'?markDiff(fx,u,'gdx'):esc(u||'—')} <span class="gvt">${bad?'ошибка':r.v==='typo'?'описка — засчитано':'верно'}</span></div>`+
   (bad?`<div class="gfix"${rk?` data-say="${esc(fx)}"`:''}>${rk&&u&&u!=='-'?markDiff(u,fx):esc(fx)}</div>${r.note?`<div class="gnote">${esc(r.note)}</div>`:''}${rk&&r.fix&&kn(ref)!==kn(fx)?`<div class="gref" data-say="${esc(ref)}">Можно и так: ${esc(ref)}</div>`:''}`
    :`<div class="gref"${rk?` data-say="${esc(ref)}"`:''}>Эталон: ${esc(rk?tplK(x):ref)}${rk?' ▶':''}</div>`)+
