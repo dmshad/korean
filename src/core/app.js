@@ -230,8 +230,9 @@ function pruneST(){try{
  if(ST.lesArc&&typeof COURSE==='object'&&COURSE.on){const keep=new Set([COURSE.cur,COURSE.view].filter(Boolean));for(const g of Object.keys(ST.lesArc))if(!keep.has(g))delete ST.lesArc[g];}
  const S=Object.values((ST.les&&ST.les.by)||{});for(const L of Object.values(ST.lesArc||{}))S.push(...Object.values((L&&L.by)||{}));
  for(const s of S){if(!s||!s.bl||typeof s.bi!=='number')continue;
-  for(const i of Object.keys(s.bl)){if(+i<s.bi&&s.res&&s.res[i]){delete s.bl[i];if(s.ans)delete s.ans[i];
-   s.res[i]=s.res[i].map(r=>r&&typeof r==='object'?{v:r.v,e:r.e||'',man:r.man||0}:r);}}}
+  for(const i of Object.keys(s.bl)){if(+i<s.bi&&s.res&&s.res[i]){const B=s.bl[i]||[],A=(s.ans&&s.ans[i])||[];delete s.bl[i];if(s.ans)delete s.ans[i];
+   s.res[i]=s.res[i].map((r,k)=>{if(!r||typeof r!=='object')return r;const o={v:r.v,e:r.e||'',man:r.man||0};
+    if(r.v==='bad'){const x=B[k]||r.x;if(x)o.x={t:x.t,u:x.u,ru:x.ru,ko:x.ko};o.a=String(A[k]!=null?A[k]:(r.a||'')).trim();if(r.fix)o.fix=r.fix;if(r.note)o.note=r.note;}return o;});}}}
  if(ST.lesArc&&!Object.keys(ST.lesArc).length)delete ST.lesArc;
 }catch(e){}}
 function saveST(){pruneST();ST.upd=Date.now();const snap=JSON.parse(JSON.stringify(ST));
@@ -738,9 +739,10 @@ function courseNextHTML(){if(typeof COURSE!=='object'||!COURSE.on||COURSE.view)r
 document.addEventListener('click',e=>{const b=e.target.closest('[data-cnext]');if(!b)return;e.preventDefault();e.stopPropagation();
  if(!CNX){CNX=1;b.textContent='Точно? Нажми ещё раз';b.classList.remove('pri');b.classList.add('warn');setTimeout(()=>{if(CNX){CNX=0;if(b.isConnected){b.textContent='Тема пройдена — открыть следующую';b.classList.remove('warn');b.classList.add('pri');}}},4000);return;}
  CNX=0;const nx=COURSE.steps.slice(COURSE.idx+1).find(x=>COURSE.loaded(x));if(!nx)return;COURSE.setView(null);COURSE.set(nx.id);reloadApp();},true);
-function lesSummary(){const L=LES(),rows=[],bad=[];
+function lesSummary(){try{return lesSummary0();}catch(e){return `<div class="tmeta">${GL(CURG)} · итог</div><div class="gtitle">${esc(CURG.title)}</div><p class="gp mut">Сводку ошибок собрать не удалось.</p>${courseNextHTML()}`;}}
+function lesSummary0(){const L=LES(),rows=[],bad=[];
  for(const st of LSTG){if(st.kind==='end')continue;const s=L.by[st.id];if(!s)continue;let n=0,ok=0,tot=0;
-  for(const i in s.res){n++;s.res[i].forEach((r,k)=>{tot++;if(r.v==='ok'||r.v==='typo')ok++;else if(r.v==='bad')bad.push({st,i:+i,x:s.bl[i][k],r,a:((s.ans[i]||[])[k]||'').trim(),s});});}
+  for(const i in s.res){n++;s.res[i].forEach((r,k)=>{tot++;if(r.v==='ok'||r.v==='typo')ok++;else if(r.v==='bad')bad.push({st,i:+i,x:((s.bl||{})[i]||[])[k]||r.x||{},r,a:(((s.ans||{})[i]||[])[k]||r.a||'').trim(),s});});}
   if(n)rows.push(`${st.label}: ${n} бл., ${ok}/${tot}`);}
  const grp=(f)=>{const m={};bad.forEach(b=>{const k=f(b);if(!k)return;(m[k]=m[k]||{n:0,bl:new Set()}).n++;m[k].bl.add(b.st.id+b.i);});return m;};
  const byE=grp(b=>EN[b.r.e]||b.r.e||'другое'),byU=grp(b=>b.x.t===CURG.id&&b.x.u?b.x.u:'');
@@ -751,7 +753,7 @@ function lesSummary(){const L=LES(),rows=[],bad=[];
 Этапы: ${rows.join('; ')||'—'}
 Ошибки по типам: ${Object.entries(byE).map(([k,v])=>`${k} — ${v.n}`).join('; ')||'нет'}
 Ошибки:
-${bad.map(b=>`- [${b.st.label}] ${b.s.dir==='rk'?b.x.ru:b.x.ko} → ${b.a||'—'} | верно: ${b.r.fix||(b.s.dir==='rk'?b.x.ko:b.x.ru)}${b.r.note?' | '+b.r.note:''}`).join('\n')||'—'}`;
+${bad.map(b=>`- [${b.st.label}] ${(b.s.dir==='rk'?b.x.ru:b.x.ko)||'(текст не сохранён)'} → ${b.a||'—'} | верно: ${b.r.fix||(b.s.dir==='rk'?b.x.ko:b.x.ru)||'—'}${b.r.note?' | '+b.r.note:''}`).join('\n')||'—'}`;
  return `<div class="tmeta">${GL(CURG)} · итог</div><div class="gtitle">${esc(CURG.title)}</div>
  <p class="gp">Посмотри итог и ошибки. Чувствуешь себя уверенно — открывай следующую тему; если нет — вернись к этапам, где были ошибки.</p>
  <textarea id="gsum" readonly rows="12">${esc(t)}</textarea>${courseNextHTML()}<div class="tbtns">${btn('gcopy','Скопировать',0)}</div>`;}
