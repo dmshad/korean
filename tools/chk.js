@@ -89,10 +89,20 @@ const CHK=(()=>{
   return null;}
  function bRule(a,c){
   if(c.endsWith('지')&&LEX.stem[c.slice(0,-1)]){const b=bForms(c.slice(0,-1));if(b&&b.ji.includes(a))return {kind:'birr',note:'Перед -지 основа не меняется: '+c+'.'};return null;}
-  const f=LEX.form[c];if(!f)return null;const s=f.s,b=bForms(s);if(!b)return null;const irr=!c.startsWith(s);
+  const f=LEX.form[c];if(!f)return null;const s=f.s,b=bForms(s);
+  if(!b){if(c.startsWith(s)&&[s+'워요',s+'웠어요'].includes(a)&&a!==c)return {kind:'breg',note:s+'다 — правильная основа, перед 아/어 не меняется: '+c+'.'};return null;}
+  const irr=!c.startsWith(s);
   if(irr&&b.reg.includes(a))return {kind:'birr',note:(s==='돕'?'돕다 — особый: ㅂ → 오, 오 + 아 = 와: ':BN[b.k][0])+c+'.'};
-  if(irr&&b.k==='b'&&b.irr.includes(a)&&a!==c)return {kind:'birr',note:(s==='돕'?'돕다 — 와, не 워: ':'워 — после любой гласной (кроме 돕다): ')+c+'.'};
-  if(!irr&&b.irr.includes(a))return {kind:'breg',note:s+'다 — правильная основа, '+BN[b.k][1]+' не меняется: '+c+'.'};
+  if(irr&&b.k==='b'&&b.irr.includes(a)&&a!==c){
+   // та же форма основы, другое время — пояснение о времени, а не о 워/와
+   const grp=x=>b.irr.indexOf(x)<2?'w':'a',past=x=>x.length>=3&&x.endsWith('어요')&&isH(x.slice(-3,-2))&&dec(x.slice(-3,-2)).t===20;
+   if(grp(a)===grp(c)&&past(a)!==past(c))return {kind:'tense',note:(past(c)?'Нужно прошедшее время: ':'Нужно настоящее время: ')+c+'.'};
+   return {kind:'birr',note:(s==='돕'?'돕다 — 와, не 워: ':'워 — после любой гласной (кроме 돕다): ')+c+'.'};}
+  if(irr&&b.k==='b'){const d=dec(s.slice(-1)),z=s.slice(0,-1)+enc(d.l,d.v,0);
+   // гибриды: ㅂ оставлен + 워 (쉽워요), пропущен 우 (쉬어요, 도아요), несокращённое 우어 (추우어요)
+   const H=[s+'워요',s+'웠어요',s+'와요',s+'왔어요',z+'어요',z+'었어요',z+'아요',z+'았어요',z+'우어요',z+'우었어요',z+'오아요',z+'오았어요'];
+   if(H.includes(a)&&a!==c)return {kind:'birr',note:(s==='돕'?'돕다 — особый: ㅂ → 오, 오 + 아 = 와: ':BN.b[0])+c+'.'};}
+  if(!irr&&(b.irr.includes(a)||[s+'워요',s+'웠어요',s+'와요',s+'왔어요'].includes(a)))return {kind:'breg',note:s+'다 — правильная основа, '+BN[b.k][1]+' не меняется: '+c+'.'};
   return null;}
  function rules(ans,v){const A=ans.split(' '),C=v.split(' ');if(A.length!==C.length)return null;
   const diff=[];for(let k=0;k<A.length;k++)if(A[k]!==C[k])diff.push(k);
@@ -302,6 +312,20 @@ const CHK=(()=>{
    if(BAN1[q]===p){n++;pr++;continue;}return null;}
   if(!n)return null;
   return (yo?'Здесь 반말 — без вежливого окончания (요, 이에요/예요, 주세요): '+x+'.':'')+(pr?(yo?' ':'')+'В 반말 — 나/내, не 저/제: '+x+'.':'');}
+
+ // канон «лайт» для ловушек: только опущение 저는/나는
+ const lite=s=>s.split(' ').filter(t=>t&&t!=='저는'&&t!=='나는').join(' ');
+ // падеж частицы на существительном из словаря: S — 이/가, O — 을/를
+ function pCase(t){for(const [q,c] of [['이','S'],['가','S'],['을','O'],['를','O']]){if(t.length>1&&t.endsWith(q)&&LEX.nouns.has(t.slice(0,-q.length)))return {n:t.slice(0,-q.length),c};}return null;}
+ // подмена 이/가 ↔ 을/를 на том же слове меняет смысл (어머니가 도와요 ≠ 어머니를 도와요) — канон это не засчитывает
+ function pConflict(a,x){const A=lite(a).split(' '),X=lite(x).split(' ');
+  const pa=A.map(pCase).filter(Boolean),px=X.map(pCase).filter(Boolean);
+  for(const p of pa){const q=px.find(q=>q.n===p.n);if(q&&q.c!==p.c)return true;}return false;}
+ function dopRule(a,V){const A=a.split(' ');if(!A.some(t=>/^(도와|도왔|도울|도우|돕)/.test(t)))return null;
+  for(const t of A){const m=t.match(/^(.+?)(한테|에게|께)(는|도|만)?$/);if(!m)continue;
+   for(const x of V){if(!/(^| )(도와|도왔|도울|도우|돕)/.test(x))continue;const y=x.split(' ').find(w=>w===m[1]+'을'||w===m[1]+'를'||w.startsWith(m[1]+'을')||w.startsWith(m[1]+'를'));
+    if(y)return {v:'bad',kind:'dop',best:x,note:'돕다 — кому помогают, стоит с 을/를 (как «выручить кого»): '+y+'. 한테/에게 здесь нельзя.',d:diff(a,x)};}}
+  return null;}
  function check(item,ans){
   const raw=String(ans||'').trim();
   if(!raw||raw==='-')return {v:'bad',kind:'empty',best:expand(item.ko)[0]||'',note:''};
@@ -329,7 +353,15 @@ const CHK=(()=>{
    return {v:'bad',kind:'trap',best,note:tr.why,d:diff(a,best)};}
   // 반말: эталон без 요, ответ — вежливый (요, 이에요, 주세요, 저/제)
   for(const x of V){const r=banRule(a,x);if(r)return {v:'bad',kind:'ban',best:x,note:r,d:diff(a,x)};}
-  const ca=item.strict?a:canon(a);if(!item.strict)for(const x of V)if(canon(x)===ca)return {v:'ok',kind:'eq',best:x};
+  // ловушка с 저는/나는 (канон их опускает — иначе ловушка обходится)
+  {const la=lite(a);if(la!==a||1)for(const tr of item.traps||[])for(const x of expand(tr.a)){const lx=lite(norm(x));if(lx===la&&!V.some(v=>lite(v)===lx))return {v:'bad',kind:'trap',best:V[0],note:tr.why,d:diff(a,V[0])};}}
+  // 돕다: кому помогают — 을/를, не 한테/에게
+  {const r=dopRule(a,V);if(r)return r;}
+  const ca=item.strict?a:canon(a);if(!item.strict)for(const x of V)if(canon(x)===ca&&!pConflict(a,x))return {v:'ok',kind:'eq',best:x};
+  // задание требует конкретную форму (strict): верный ответ другой формой — ошибка с пояснением
+  if(item.strict){const cA=canon(a),ng=t=>/(^| )(안|못) /.test(t)?'s':/지 (않|못)/.test(t)?'l':'';
+   for(const x of V)if(canon(x)===cA&&!pConflict(a,x)){if(ng(a)===ng(x))return {v:'ok',kind:'eq',best:x};
+    return {v:'bad',kind:'strict',best:x,note:'По-корейски верно, но задание просит именно ту форму, что в скобке: '+x+'.',d:diff(a,x)};}}
   for(const x of V){const r=rules(a,x);if(r)return {v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
   if(!item.strict)for(const x of V){const r=rules(ca,canon(x));if(r)return {v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
   const la=pron(an);
