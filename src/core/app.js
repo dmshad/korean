@@ -683,7 +683,7 @@ function blockHTML(s,title,foot){if(s.kind==='les'&&!s.bl[s.bi]){const x=lesStat
   return `<div class="gi"><div class="gq sm${rk?'':' k'}"${rk?'':` data-say="${esc(x.ko)}"`}><span class="gk">${k+1}</span>${rk?ruH(x.ru):koH(x)}</div>
   <div class="gv ${bad?'bad':'ok'}">${bad&&rk&&u&&u!=='-'?markDiff(fx,u,'gdx'):esc(u||'—')} <span class="gvt">${bad?'ошибка':r.v==='typo'?'описка — засчитано':'верно'}</span></div>`+
   (bad?`<div class="gfix"${rk?` data-say="${esc(fx)}"`:''}>${rk&&u&&u!=='-'?markDiff(u,fx):esc(fx)}</div>${r.note?`<div class="gnote">${esc(r.note)}</div>`:''}${rk&&r.fix&&kn(ref)!==kn(fx)?`<div class="gref" data-say="${esc(ref)}">Можно и так: ${esc(ref)}</div>`:''}`
-   :`<div class="gref"${rk?` data-say="${esc(ref)}"`:''}>Эталон: ${esc(rk?tplK(x):ref)}${rk?' ▶':''}</div>`)+
+   :`${r.note?`<div class="gnote">${esc(r.note)}</div>`:''}<div class="gref"${rk?` data-say="${esc(ref)}"`:''}>Эталон: ${esc(rk?tplK(x):ref)}${rk?' ▶':''}</div>`)+
   (r.why?`<div class="gwhy">${txt(r.why)}</div>`:GR.why[wk]?`<p class="gnote">Объясняю…</p>`:r.whyErr?`<div class="gnote">${esc(r.whyErr)}</div>`:'')+
   `<div class="gft"><span class="gtt">${GL(GBY[x.t])}</span><span>${bad&&!OFF&&!r.why&&!GR.why[wk]?`<button class="chip gfl" data-a="gwhy" data-k="${k}">Почему?</button> `:''}<button class="chip gfl" data-a="gfl" data-k="${k}">${bad?'Засчитать':'Не засчитывать'}</button></span></div></div>`;}).join('');
  return h+foot;}

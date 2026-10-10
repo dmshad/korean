@@ -67,6 +67,7 @@ const CHK=(()=>{
   for(const[pr,why]of PAIRS)if(pr.includes(sa)&&pr.includes(sc)&&sa!==sc){
    const last=stem.slice(-1);const tail=last?(' «'+stem+'» кончается на '+(hasB(last)?'согласную':'гласную')+'.'):'';
    return {kind:'allo',note:why+'.'+tail};}
+  {const r=h2Rule(a,c);if(r)return r;}
   return bRule(a,c)||hRule(a,c)||fRule(a,c)||gRule(a,c)||sRule(a,c)||psRule(a,c)||reRule(a,c)||goRule(a,c)||jmRule(a,c)||asRule(a,c)||niRule(a,c)||myRule(a,c)||roRule(a,c)||ayRule(a,c)||boRule(a,c)||dwRule(a,c)||adRule(a,c)||ptRule(a,c)||pfRule(a,c)||kiRule(a,c);}
  // неправильные основы: ㅂ (덥어요, 가까와요, 도워요), ㄷ (묻어요 / 발아요), ㅅ (낫아요 / 우어요); перед -지 основа целая
  const END=['어요','아요','었어요','았어요'];
@@ -86,6 +87,16 @@ const CHK=(()=>{
    return null;}
   const d=dec(l);if(d.t!==17)return null;const z=pre.slice(0,-1)+enc(d.l,d.v,0),zl=pre.slice(0,-1)+enc(d.l,d.v,8);
   if([z+'습'+e,z+'읍'+e,zl+'습'+e,zl+'읍'+e].includes(a))return {kind:'h',note:N};
+  return null;}
+
+ // 합니다: вопрос/утверждение, невыпавшая ㄹ, -습니다 к 해요-форме, существительное + 습니다
+ function h2Rule(a,c){if(a===c)return null;
+  if(c.endsWith('니다')&&a===c.slice(0,-1)+'까')return {kind:'h',note:'-ㅂ니다/-습니다 — утверждение, -ㅂ니까/-습니까 — вопрос: '+c+'.'};
+  if(c.endsWith('니까')&&a===c.slice(0,-1)+'다')return {kind:'h',note:'Это вопрос: -ㅂ니까/-습니까 — '+c+'.'};
+  if((c.endsWith('니다')||c.endsWith('니까'))&&a.length===c.length&&a.slice(-2)===c.slice(-2)&&a.slice(0,-3)===c.slice(0,-3)){const x=c.slice(-3,-2),y=a.slice(-3,-2);
+   if(isH(x)&&isH(y)){const dx=dec(x),dy=dec(y);if(dx.t===17&&dy.t===8&&dx.l===dy.l&&dx.v===dy.v)return {kind:'h',note:'ㄹ выпадает перед -ㅂ니다: '+c+'.'};}}
+  if(/습니[다까]$/.test(a)&&LEX.form[a.slice(0,-3)+'요']&&!/습니[다까]$/.test(c))return {kind:'h',note:'-ㅂ니다/-습니다 присоединяется к основе, а не к 해요-форме: '+c+'.'};
+  if(/입니[다까]$/.test(c)&&(a===c.slice(0,-3)+'습'+c.slice(-2)||a===c.slice(0,-3)+'이습'+c.slice(-2)))return {kind:'h',note:'После существительного — связка 입니다: '+c+'.'};
   return null;}
  function bRule(a,c){
   if(c.endsWith('지')&&LEX.stem[c.slice(0,-1)]){const b=bForms(c.slice(0,-1));if(b&&b.ji.includes(a))return {kind:'birr',note:'Перед -지 основа не меняется: '+c+'.'};return null;}
@@ -293,10 +304,24 @@ const CHK=(()=>{
    if(t.endsWith('지')&&n&&/^(못했어요|못해요|않았어요|않아요)$/.test(n)){const sm=t.slice(0,-1),neg=n[0]==='못'?'못':'안',past=n==='못했어요'||n==='않았어요';
     if(sm.endsWith('하')&&sm.length>1){o.push(sm.slice(0,-1),neg,past?'했어요':'해요');k++;continue;}
     const e=LEX.stem[sm];if(e){o.push(neg,past?e.past:e.pres);k++;continue;}}
+   // будущее: 가지 않을 거예요 → 안 갈 거예요
+   if(t.endsWith('지')&&n&&/^(않을|못할)$/.test(n)&&/^(거|것|겁)/.test(T[k+2]||'')){const sm=t.slice(0,-1),neg=n[0]==='못'?'못':'안';
+    if(sm.endsWith('하')&&sm.length>1){o.push(sm.slice(0,-1),neg,'할');k++;continue;}
+    const e=LEX.stem[sm];if(e){const ft=futTok(sm,e.pres);if(ft){o.push(neg,ft);k++;continue;}}}
    // 하다-глагол с 안/못 внутри: 운동하지… уже выше; короткое 운동을 못 해요 → частица снимется ниже
    o.push(t);}
+  const FUL={'것입니다':'겁니다','것입니까':'겁니까','것이에요':'거예요','것이에요?':'거예요','여기서':'여기에서','거기서':'거기에서','저기서':'저기에서','어디서':'어디에서'};
+  for(let k=0;k<o.length;k++)if(FUL[o[k]])o[k]=FUL[o[k]];
+  // 와/과 = 하고 (по алломорфу); 같이/함께 после «с кем» не обязателен
+  for(let k=0;k<o.length;k++){const t=o[k],m=t.match(/^(.+)(와|과)$/);if(m&&LEX.nouns.has(m[1])&&(m[2]==='과')===hasB(m[1].slice(-1)))o[k]=m[1]+'하고';}
+  for(let k=o.length-1;k>0;k--)if((o[k]==='같이'||o[k]==='함께')&&o[k-1].endsWith('하고'))o.splice(k,1);
+  // контрастное 는 после слова времени / места с 에: 주말에는 = 주말에, 어제는 = 어제
+  const TW=new Set(['어제','오늘','내일','지금','주말','아침','저녁','밤','점심','내년','올해','작년','요즘','이번','다음','지난주','지난달']);
+  for(let k=0;k<o.length;k++){const t=o[k];if(t.length>2&&t.endsWith('에는'))o[k]=t.slice(0,-1);else{const m=t.match(/^(.+)(은|는)$/);if(m&&TW.has(m[1]))o[k]=m[1];}}
+  // 아마 — позиция свободная
+  {const i=o.indexOf('아마');if(i>0){o.splice(i,1);o.unshift('아마');}}
   T=o.filter(t=>t!=='저는'&&t!=='나는').map(t=>{if(t==='저의')return '제';if(t==='나의')return '내';const m=t.match(/^(.+)한테(도|만)?$/);if(m&&LEX.nouns.has(m[1]))return m[1]+'에게'+(m[2]||'');return t;}).map(t=>{if(t.endsWith('의')&&t.length>1&&!LEX.nouns.has(t)&&LEX.nouns.has(t.slice(0,-1)))return t.slice(0,-1);return t;}).map((t,k,A)=>/^(거예요|거에요|겁니다|겁니까|꺼예요)/.test(A[k+1]||'')?t:stripP(t));
-  const r=[];for(let k=0;k<T.length;k++){if(T[k]==='어디에'){r.push('어디');continue;}r.push(T[k]);}
+  const r=[];for(let k=0;k<T.length;k++){if(T[k]==='어디에'){r.push('어디');continue;}if(T[k]==='무엇'){r.push('뭐');continue;}r.push(T[k]);}
   // 하다-составной без пробела и с 안/못 между: 운동 못 해요 — норма; 못 운동해요 не трогаем
   return r.join(' ');}
  /* ---- главная ---- */
@@ -313,6 +338,14 @@ const CHK=(()=>{
   if(!n)return null;
   return (yo?'Здесь 반말 — без вежливого окончания (요, 이에요/예요, 주세요): '+x+'.':'')+(pr?(yo?' ':'')+'В 반말 — 나/내, не 저/제: '+x+'.':'');}
 
+
+ // описка засчитывается только внутри основы существительного: окончания и частицы — это грамматика
+ function nounTypo(a,b){const A=a.split(' '),B=b.split(' ');if(A.length!==B.length)return false;
+  const d=[];for(let k=0;k<A.length;k++)if(A[k]!==B[k])d.push(k);if(d.length!==1)return false;
+  const at=A[d[0]],bt=B[d[0]];
+  for(let n=bt.length;n>=1;n--){const N=bt.slice(0,n),P=bt.slice(n);if(!LEX.nouns.has(N))continue;
+   if(!at.endsWith(P))return false;const aN=at.slice(0,at.length-P.length);return lev(jamo(aN),jamo(N))===1;}
+  return false;}
  // канон «лайт» для ловушек: только опущение 저는/나는
  const lite=s=>s.split(' ').filter(t=>t&&t!=='저는'&&t!=='나는').join(' ');
  // падеж частицы на существительном из словаря: S — 이/가, O — 을/를
@@ -350,11 +383,12 @@ const CHK=(()=>{
   for(const x of V)if(nsp(x)===an)return {v:'typo',kind:'space',best:x,note:'Только пробелы.'};
   for(const tr of item.traps||[])for(const x of expand(tr.a))if(nsp(x)===an){
    const best=V.slice().sort((p,q)=>lev(jamo(nsp(p)),jamo(an))-lev(jamo(nsp(q)),jamo(an)))[0];
+   if(tr.ok)return {v:'ok',kind:'soft',best,note:tr.why};
    return {v:'bad',kind:'trap',best,note:tr.why,d:diff(a,best)};}
   // 반말: эталон без 요, ответ — вежливый (요, 이에요, 주세요, 저/제)
   for(const x of V){const r=banRule(a,x);if(r)return {v:'bad',kind:'ban',best:x,note:r,d:diff(a,x)};}
   // ловушка с 저는/나는 (канон их опускает — иначе ловушка обходится)
-  {const la=lite(a);if(la!==a||1)for(const tr of item.traps||[])for(const x of expand(tr.a)){const lx=lite(norm(x));if(lx===la&&!V.some(v=>lite(v)===lx))return {v:'bad',kind:'trap',best:V[0],note:tr.why,d:diff(a,V[0])};}}
+  {const la=lite(a);if(la!==a||1)for(const tr of item.traps||[])for(const x of expand(tr.a)){const lx=lite(norm(x));if(lx===la&&!V.some(v=>lite(v)===lx))return tr.ok?{v:'ok',kind:'soft',best:V[0],note:tr.why}:{v:'bad',kind:'trap',best:V[0],note:tr.why,d:diff(a,V[0])};}}
   // 돕다: кому помогают — 을/를, не 한테/에게
   {const r=dopRule(a,V);if(r)return r;}
   const ca=item.strict?a:canon(a);if(!item.strict)for(const x of V)if(canon(x)===ca&&!pConflict(a,x))return {v:'ok',kind:'eq',best:x};
@@ -362,14 +396,15 @@ const CHK=(()=>{
   if(item.strict){const cA=canon(a),ng=t=>/(^| )(안|못) /.test(t)?'s':/지 (않|못)/.test(t)?'l':'';
    for(const x of V)if(canon(x)===cA&&!pConflict(a,x)){if(ng(a)===ng(x))return {v:'ok',kind:'eq',best:x};
     return {v:'bad',kind:'strict',best:x,note:'По-корейски верно, но задание просит именно ту форму, что в скобке: '+x+'.',d:diff(a,x)};}}
+  if(!item.strict)for(const tr of item.traps||[])if(!tr.ok)for(const x of expand(tr.a)){const cx=canon(norm(x));if(cx===ca&&!V.some(v=>canon(v)===cx))return {v:'bad',kind:'trap',best:V[0],note:tr.why,d:diff(a,V[0])};}
   for(const x of V){const r=rules(a,x);if(r)return {v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
   if(!item.strict)for(const x of V){const r=rules(ca,canon(x));if(r)return {v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
   const la=pron(an);
   for(const x of V){const px=pron(nsp(x));if(la.some(y=>px.includes(y)))return {v:'bad',kind:'pron',best:x,note:'Записано по произношению. 받침 звучит в следующем слоге, но пишется на своём месте: '+x+'.',d:diff(a,x)};}
   const ja=jamo(an);let best=V[0],bd=99;for(const x of V){const d=lev(jamo(nsp(x)),ja);if(d<bd){bd=d;best=x;}}
-  if(bd===1&&jamo(nsp(best)).length>=4&&!oneJ(jamo(nsp(best)),ja).includes('ㅆ'))return {v:'typo',kind:'jamo',best,note:'Описка в одной букве.',d:diff(a,best)};
+  if(bd===1&&jamo(nsp(best)).length>=4&&!oneJ(jamo(nsp(best)),ja).includes('ㅆ')&&nounTypo(a,best))return {v:'typo',kind:'jamo',best,note:'Описка в одной букве.',d:diff(a,best)};
   // ловушка с опечаткой (одна чамо): ошибка по смыслу важнее опечатки
-  for(const tr of item.traps||[])for(const x of expand(tr.a))if(lev(jamo(nsp(x)),ja)<=1&&jamo(nsp(x)).length>=4)return {v:'bad',kind:'trap',best,note:tr.why+' Плюс ошибка в написании — сравни с эталоном.',d:diff(a,best)};
+  for(const tr of item.traps||[])if(!tr.ok)for(const x of expand(tr.a))if(lev(jamo(nsp(x)),ja)<=1&&jamo(nsp(x)).length>=4)return {v:'bad',kind:'trap',best,note:tr.why+' Плюс ошибка в написании — сравни с эталоном.',d:diff(a,best)};
   return {v:'unk',kind:'unk',best,note:'',d:diff(a,best)};
  }
  return {check,expand,norm,link,jamo,lev,diff,setLex,canon};
