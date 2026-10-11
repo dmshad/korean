@@ -405,6 +405,9 @@ const CHK=(()=>{
   if(bd===1&&jamo(nsp(best)).length>=4&&!oneJ(jamo(nsp(best)),ja).includes('ㅆ')&&nounTypo(a,best))return {v:'typo',kind:'jamo',best,note:'Описка в одной букве.',d:diff(a,best)};
   // ловушка с опечаткой (одна чамо): ошибка по смыслу важнее опечатки
   for(const tr of item.traps||[])if(!tr.ok)for(const x of expand(tr.a))if(lev(jamo(nsp(x)),ja)<=1&&jamo(nsp(x)).length>=4)return {v:'bad',kind:'trap',best,note:tr.why+' Плюс ошибка в написании — сравни с эталоном.',d:diff(a,best)};
+  // те же слова в другом порядке — подсказка; вердикт ставит ученик
+  if(!item.strict){const tk=t=>canon(t).split(' ').filter(Boolean),ta=tk(a),ka=ta.slice().sort().join(' ');
+   for(const x of V){const tx=tk(x);if(tx.length>2&&tx.slice().sort().join(' ')===ka&&tx[tx.length-1]===ta[ta.length-1])return {v:'unk',kind:'unk',ord:1,best:x,note:'Те же слова, другой порядок. Обычный — как в эталоне: глагол в конце, срок прямо перед ним, группа времени и число со счётным не разрываются. Блоки с частицами переставлять можно: если смысл тот же — засчитай.',d:diff(a,x)};}}
   return {v:'unk',kind:'unk',best,note:'',d:diff(a,best)};
  }
  return {check,expand,norm,link,jamo,lev,diff,setLex,canon};

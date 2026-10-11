@@ -614,7 +614,7 @@ function offChk(s,i){exSave();const a=s.ans[i]||[];
   if(!u||u==='-')return {v:'bad',fix:'',note:'',e:'empty'};
   if(s.dir==='kr')return {v:'unk',fix:'',note:'',e:''};
   const r=CHK.check(x,u);
-  if(r.v==='unk')return {v:'unk',fix:r.best||'',note:'',e:'',dsp:1};
+  if(r.v==='unk')return {v:'unk',fix:r.best||'',note:r.note||'',e:'',dsp:1};
   return {v:r.v,fix:r.v==='bad'?(r.best||''):'',note:r.note||'',e:r.v==='bad'?r.kind:''};});
  s.res[i].forEach((r,k)=>{if(r.v!=='unk')grStat(s.bl[i][k].t,r.v!=='bad',1);});saveST();exUpd();}
 function exSelf(k,v){const s=EXA();if(!s||!s.res[s.bi])return;const r=s.res[s.bi][k],x=s.bl[s.bi][k];if(!r||r.v!=='unk')return;
@@ -629,7 +629,7 @@ function unkHTML(s,i,k,x,r,u,rk){const ref=rk?(r.fix||x.ko):x.ru;
  return `<div class="gi"><div class="gq sm${rk?'':' k'}"${rk?'':` data-say="${esc(x.ko)}"`}><span class="gk">${k+1}</span>${rk?ruH(x.ru):koH(x)}</div>
  <div class="gv unk">${rk?markDiff(ref,u,'gdx'):esc(u)} <span class="gvt">${rk?'не распознано':'сверь сам'}</span></div>
  <div class="gref"${rk?` data-say="${esc(ref)}"`:''}>${rk?'Ближайший эталон: '+markDiff(u,ref):'Эталон: '+esc(ref)}</div>
- ${rk?`<div class="gunk">Автоматически не распознано. Если твой вариант тоже верен — засчитай.</div>`:''}
+ ${rk?`<div class="gunk">${r.note?esc(r.note):'Автоматически не распознано. Если твой вариант тоже верен — засчитай.'}</div>`:''}
  <div class="gft"><span class="gtt">${GL(GBY[x.t])}</span><span><button class="chip gfl" data-a="gself" data-v="ok" data-k="${k}">${rk?'Засчитать':'Верно'}</button> <button class="chip gfl" data-a="gself" data-v="bad" data-k="${k}">${rk?'Моя ошибка':'Неверно'}</button></span></div></div>`;}
 async function chkBlock(){const s=EXA();if(!s)return;const i=s.bi,sid=s.id,key=sid+'|c'+i;if(GR.ck[key]||!s.bl[i]||s.res[i])return;if(s.dir==='au'){exSave();return auChk(s,i);}
  if(OFF)return offChk(s,i);
@@ -1107,7 +1107,7 @@ function trFillOff(m){const TRG=TRGM[m],T=TRS(m),k=DS().sit;TRG.err=null;const P
 function trCheckOff(c,k,txt,m){const L=c.lines[k];
  if(L.s!=='me'){c.res[k]={t:txt,v:'self',fix:'',note:'',tip:''};return trAdv(m);}
  const r=CHK.check({ru:L.ru,ko:L.tpl||L.ko,alt:L.alt||[],traps:L.traps||[],u:''},txt);
- if(r.v==='unk')c.res[k]={t:txt,v:'bad',unk:1,fix:'',note:'Не распознано. Сравни с эталоном: если твой вариант верный — «Засчитать» (ответ попадёт в «Спорные»).',tip:''};
+ if(r.v==='unk')c.res[k]={t:txt,v:'bad',unk:1,fix:'',note:(r.note?r.note+' ':'')+'Не распознано. Сравни с эталоном: если твой вариант верный — «Засчитать» (ответ попадёт в «Спорные»).',tip:''};
  else c.res[k]={t:txt,v:r.v,fix:r.v==='ok'?'':(r.best||''),note:r.note||'',tip:''};
  return trAdv(m);}
 async function trFill(m){m=dm(m);const TRG=TRGM[m],T=TRS(m);if(TRG.gen||T.q.length>=1)return;if(OFF)return trFillOff(m);TRG.gen=Date.now();TRG.err=null;trUpd();
