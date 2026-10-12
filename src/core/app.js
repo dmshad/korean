@@ -226,7 +226,7 @@ function WK(w){const x=ST.weak[w.id];return x?!!x.on:!!w.weak;}
 let REF=null,SAVEQ=Promise.resolve(),TREADY=false,TLOCAL=false;
 /* Чистка состояния (03.10): храним позицию, «плохо помню», «Спорные», счётчики и незаконченное.
    Уроки прошлых тем (lesArc) — только текущая позиция и повтор; в уроке — тексты завершённых блоков удаляются, остаются вердикты. */
-function pruneST(){try{
+function pruneST(){try{delete ST.grstat;
  if(ST.lesArc&&typeof COURSE==='object'&&COURSE.on){const keep=new Set([COURSE.cur,COURSE.view].filter(Boolean));for(const g of Object.keys(ST.lesArc))if(!keep.has(g))delete ST.lesArc[g];}
  const S=Object.values((ST.les&&ST.les.by)||{});for(const L of Object.values(ST.lesArc||{}))S.push(...Object.values((L&&L.by)||{}));
  for(const s of S){if(!s||!s.bl||typeof s.bi!=='number')continue;
@@ -534,8 +534,8 @@ function valid(r,sl){if(!Array.isArray(r))throw {code:'invalid_json'};const n=sl
  if(it.length<Math.ceil(n/2))throw {code:'invalid_json'};return it;}
 
 /* --- Повторение: сессии и план --- */
-function GS(){if(ST.gr&&!ST.grs){ST.grs={[ST.gr.dir||'rk']:ST.gr};ST.grd=ST.gr.dir||'rk';ST.grstat=ST.gr.stats||{};}delete ST.gr;
- ST.grs=ST.grs||{};ST.grd=ST.grd||'rk';ST.grstat=ST.grstat||{};return ST.grs[ST.grd];}
+function GS(){if(ST.gr&&!ST.grs){ST.grs={[ST.gr.dir||'rk']:ST.gr};ST.grd=ST.gr.dir||'rk';}delete ST.gr;
+ ST.grs=ST.grs||{};ST.grd=ST.grd||'rk';return ST.grs[ST.grd];}
 function fixRun(b){for(let i=2;i<b.length;i++)if(b[i].t===b[i-1].t&&b[i].t===b[i-2].t){const j=b.findIndex((x,k)=>k>i&&x.t!==b[i].t);if(j>0)[b[i],b[j]]=[b[j],b[i]];}return b;}
 function planSeries(sel){const T=GTOP.filter(g=>gMod(g).length&&(!sel||sel.includes(g.n))&&(!OFF||BANK.has(g.id)));if(!T.length)return [];
  let sl=[];T.forEach(g=>sl.push(g.id,g.id));
@@ -646,7 +646,7 @@ async function exWhy(k){const s=EXA();if(!s)return;const i=s.bi,r=s.res[i]&&s.re
  GR.why[key]=1;delete r.whyErr;exUpd();
  try{const sm=await SMP();if(!sm)throw {code:'no_sample'};const a=await sm(whyPrompt(s,i,k),{cache:false});r.why=String(a.text||'').trim();saveST();}
  catch(e){r.whyErr=emsg(e);}finally{delete GR.why[key];if(EXA()===s)exUpd();}}
-function grStat(t,ok,d){GS();const x=ST.grstat[t]||(ST.grstat[t]=[0,0]);x[ok?0:1]+=d;}
+function grStat(){} // статистика грамматики по темам не ведётся (12.10)
 function exFlip(k){const s=EXA(),r=s.res[s.bi][k],t=s.bl[s.bi][k].t,was=r.v!=='bad';
  r.v=was?'bad':'ok';r.man=1;if(r.v==='bad'&&!r.note)r.note='Отмечено вручную.';grStat(t,was,-1);grStat(t,!was,1);saveST();exUpd();}
 function exSave(){const s=EXA();if(!s||!s.bl[s.bi]||s.res[s.bi]||!$('gcard'))return;const v=[...document.querySelectorAll('#gcard .gin')].map(x=>x.value);if(v.length)s.ans[s.bi]=v;saveST();}
