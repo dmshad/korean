@@ -401,8 +401,8 @@ const CHK=(()=>{
   if(!item.strict)for(const x of V){const r=rules(ca,canon(x));if(r)return {v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
   const la=pron(an);
   for(const x of V){const px=pron(nsp(x));if(la.some(y=>px.includes(y)))return {v:'bad',kind:'pron',best:x,note:'Записано по произношению. 받침 звучит в следующем слоге, но пишется на своём месте: '+x+'.',d:diff(a,x)};}
-  // 받침 перенесён в следующий слог, а ㅇ выпало: 머겄어요 вместо 먹었어요
-  {const J0=[jamo(an),jamo(nsp(lite(a)))],C=c=>c>='ㄱ'&&c<='ㅎ',W=c=>c>='ㅏ'&&c<='ㅣ';for(const x of V){const jx=jamo(nsp(x));for(let i=1;i<jx.length-1;i++){if(jx[i]!=='ㅇ'||!C(jx[i-1])||!W(jx[i+1]))continue;if(J0.includes(jx.slice(0,i)+jx.slice(i+1)))return {v:'bad',kind:'pron',best:x,note:'Записано по произношению. 받침 звучит в следующем слоге, но пишется на своём месте, а следующий слог начинается с ㅇ: '+x+'.',d:diff(a,x)};}}}
+  // пропущена ㅇ при наборе — слоги склеились (머겄어요 вместо 먹었어요): опечатка
+  {const J0=[jamo(an),jamo(nsp(lite(a)))],C=c=>c>='ㄱ'&&c<='ㅎ',W=c=>c>='ㅏ'&&c<='ㅣ';for(const x of V){const jx=jamo(nsp(x));for(let i=1;i<jx.length-1;i++){if(jx[i]!=='ㅇ'||!C(jx[i-1])||!W(jx[i+1]))continue;if(J0.includes(jx.slice(0,i)+jx.slice(i+1)))return {v:'typo',kind:'jamo',best:x,note:'Опечатка: пропущена ㅇ, и слоги склеились: '+x+'.',d:diff(a,x)};}}}
   const ja=jamo(an);let best=V[0],bd=99;for(const x of V){const d=lev(jamo(nsp(x)),ja);if(d<bd){bd=d;best=x;}}
   if(bd===1&&jamo(nsp(best)).length>=4&&!oneJ(jamo(nsp(best)),ja).includes('ㅆ')&&nounTypo(a,best))return {v:'typo',kind:'jamo',best,note:'Описка в одной букве.',d:diff(a,best)};
   // ловушка с опечаткой (одна чамо): ошибка по смыслу важнее опечатки
