@@ -359,7 +359,11 @@ const CHK=(()=>{
    for(const x of V){if(!/(^| )(도와|도왔|도울|도우|돕)/.test(x))continue;const y=x.split(' ').find(w=>w===m[1]+'을'||w===m[1]+'를'||w.startsWith(m[1]+'을')||w.startsWith(m[1]+'를'));
     if(y)return {v:'bad',kind:'dop',best:x,note:'돕다 — кому помогают, стоит с 을/를 (как «выручить кого»): '+y+'. 한테/에게 здесь нельзя.',d:diff(a,x)};}}
   return null;}
- function check(item,ans){
+ // описка не засчитывается автоматически: вердикт ставит ученик (решение 14.10)
+ function check(item,ans){const r=check0(item,ans);
+  if(r&&r.v==='typo')return {v:'unk',kind:'typo',typo:1,best:r.best,note:'Похоже на опечатку'+(r.note?' ('+(r.note.charAt(0).toLowerCase()+r.note.slice(1)).replace(/\.$/,'')+')':'')+'. Если это опечатка — «Засчитать»; если не помнил — «Моя ошибка».',d:r.d};
+  return r;}
+ function check0(item,ans){
   const raw=String(ans||'').trim();
   if(!raw||raw==='-')return {v:'bad',kind:'empty',best:expand(item.ko)[0]||'',note:''};
   if(/[\[\]|]/.test(raw)){const b=expand(item.ko)[0]||'';return {v:'bad',kind:'brk',best:b,note:'Квадратные скобки и | в ответе не пишутся. Пиши один вариант целиком; необязательную часть можно взять в круглые скобки.',d:diff(norm(raw),b)};}
@@ -402,7 +406,7 @@ const CHK=(()=>{
   const la=pron(an);
   for(const x of V){const px=pron(nsp(x));if(la.some(y=>px.includes(y)))return {v:'bad',kind:'pron',best:x,note:'Записано по произношению. 받침 звучит в следующем слоге, но пишется на своём месте: '+x+'.',d:diff(a,x)};}
   // пропущена ㅇ при наборе — слоги склеились (머겄어요 вместо 먹었어요): опечатка
-  {const J0=[jamo(an),jamo(nsp(lite(a)))],C=c=>c>='ㄱ'&&c<='ㅎ',W=c=>c>='ㅏ'&&c<='ㅣ';for(const x of V){const jx=jamo(nsp(x));for(let i=1;i<jx.length-1;i++){if(jx[i]!=='ㅇ'||!C(jx[i-1])||!W(jx[i+1]))continue;if(J0.includes(jx.slice(0,i)+jx.slice(i+1)))return {v:'typo',kind:'jamo',best:x,note:'Опечатка: пропущена ㅇ, и слоги склеились: '+x+'.',d:diff(a,x)};}}}
+  {const J0=[jamo(an),jamo(nsp(lite(a)))],C=c=>c>='ㄱ'&&c<='ㅎ',W=c=>c>='ㅏ'&&c<='ㅣ';for(const x of V){const jx=jamo(nsp(x));for(let i=1;i<jx.length-1;i++){if(jx[i]!=='ㅇ'||!C(jx[i-1])||!W(jx[i+1]))continue;if(J0.includes(jx.slice(0,i)+jx.slice(i+1)))return {v:'typo',kind:'jamo',best:x,note:'пропущена ㅇ, и слоги склеились: '+x+'.',d:diff(a,x)};}}}
   const ja=jamo(an);let best=V[0],bd=99;for(const x of V){const d=lev(jamo(nsp(x)),ja);if(d<bd){bd=d;best=x;}}
   if(bd===1&&jamo(nsp(best)).length>=4&&!oneJ(jamo(nsp(best)),ja).includes('ㅆ')&&nounTypo(a,best))return {v:'typo',kind:'jamo',best,note:'Описка в одной букве.',d:diff(a,best)};
   // ловушка с опечаткой (одна чамо): ошибка по смыслу важнее опечатки
