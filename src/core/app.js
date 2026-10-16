@@ -1310,9 +1310,9 @@ $('list').addEventListener('click',e=>{const b=e.target.closest('#pg [data-p]');
 $('list').addEventListener('change',e=>{if(e.target.id==='pgfile'){const f=e.target.files&&e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>pgRead(String(r.result||''));r.readAsText(f);}
  if(e.target.id==='pgown'){try{LSX.setItem('owner',e.target.value.trim());}catch(x){}}});
 function firstRun(){try{let t=+LSX.getItem('firstRun')||0;if(!t){t=Date.now();LSX.setItem('firstRun',String(t));}return t;}catch(e){return Date.now();}}
-function offUI(){const le=lastExp(),rem=OFF&&!OFFT&&(le?daysAgo(le)>=7:daysAgo(firstRun())>=7);
- $('offbn').textContent=OFFT?'Автономный режим · тест (прогресс отдельно от основного)':'Автономный режим'+(rem?' · прогресс не выгружался '+(le?daysAgo(le)+' дн.':'ни разу')+' → Прогресс':'');
- $('offbn').hidden=!(OFFT||rem);$('offb').hidden=!HASC;$('offb').textContent='Автономный режим: '+(OFFT?'вкл':'выкл');$('offb').classList.remove('ask');}
+function offUI(){ // напоминание о выгрузке прогресса убрано (16.10): тему можно выставить вручную
+ $('offbn').textContent='Автономный режим · тест (прогресс отдельно от основного)';
+ $('offbn').hidden=!OFFT;$('offb').hidden=!HASC;$('offb').textContent='Автономный режим: '+(OFFT?'вкл':'выкл');$('offb').classList.remove('ask');}
 offUI();let OFFASK=0;
 $('offb').onclick=async e=>{e.stopPropagation();
  if(!OFFASK){OFFASK=1;$('offb').textContent=OFFT?'Выключить? Нажми ещё раз':'Включить тест? Нажми ещё раз';$('offb').classList.add('ask');
