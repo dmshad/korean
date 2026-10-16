@@ -101,6 +101,9 @@ const CHK=(()=>{
 
  // запись 래요/게요; 저는 вместо 제가; время у той же основы; -고 перед 싶다
  function xRule(a,c){
+  if(/(드|주무|계)세요$/.test(c)&&a===c.replace(/세요$/,'시세요'))return {kind:'si',note:'-시- уже внутри слова: 드시다, 주무시다, 계시다 + 어요 → 드세요, 주무세요, 계세요. Второй 시 не нужен: '+c+'.'};
+  if(c.endsWith('이세요')&&c.length>3&&a===c.slice(0,-3)+'세요'&&LEX.nouns.has(c.slice(0,-3)))return {kind:'cop',note:'После согласной — 이세요, после гласной — 세요: '+c+'.'};
+  if(c.endsWith('지')&&LEX.stem[c.slice(0,-1)]){const s=c.slice(0,-1),d=dec(s.slice(-1));if(d.t===8&&a===s.slice(0,-1)+enc(d.l,d.v,0)+'지')return {kind:'se',note:'ㄹ выпадает только перед ㅅ, ㄴ, ㅂ (여세요, 엽시다). Перед -지 основа целая: '+c+'.'};}
   if(c.endsWith('래요')&&a===c.slice(0,-2)+'레요')return {kind:'sp',note:'Пишется 래요 (ㅐ): '+c+'.'};
   if(c.endsWith('래요?')&&a===c.slice(0,-3)+'레요?')return {kind:'sp',note:'Пишется 래요 (ㅐ): '+c+'.'};
   if(c.endsWith('게요')&&a===c.slice(0,-2)+'개요')return {kind:'sp',note:'Пишется 게요 (ㅔ): '+c+'.'};
@@ -295,7 +298,7 @@ const CHK=(()=>{
   if(irr&&d.t===17)return b+enc(d.l,d.v,0)+'울';if(irr&&d.t===7)return b+enc(d.l,d.v,8)+'을';if(irr&&d.t===19)return b+enc(d.l,d.v,0)+'을';
   return s+'을';}
  // -(으)ㄹ게요 / -(으)ㄹ래요: форма основы как у 거예요; запись 게요
- function gRule(a,c){for(const suf of ['게요','래요','까요']){if(!c.endsWith(suf)||c.length<3)continue;const pre=c.slice(0,-2);
+ function gRule(a,c){if(/을까요$/.test(c)&&a===c.replace(/을까요$/,'으까요'))return {kind:'fut',note:'-을까요: ㄹ обязательно — '+c+'.'};if(/[ㄹ가-힣]까요$/.test(c)&&a===c.replace(/까요$/,'가요')&&hasB(c.slice(-3,-2)))return {kind:'fut',note:'Пишется 까요 (после ㄹ читается так же): '+c+'.'};for(const suf of ['게요','래요','까요']){if(!c.endsWith(suf)||c.length<3)continue;const pre=c.slice(0,-2);
    {const q=a.slice(0,-2),s=LEX.fut&&LEX.fut[pre];if(a.endsWith(suf)&&s&&q===s&&q!==pre)return {kind:'fut',note:'Перед -'+suf+' основа принимает -(으)ㄹ: '+c+'.'};}
    if(suf==='게요'&&a===pre+'께요')return {kind:'fut',note:'Пишется 게요 (читается [께요]): '+c+'.'};
    if(a.endsWith(suf)){const r=fRule(a.slice(0,-2),pre);if(r)return {kind:'fut',note:r.note.replace(/ \(как в .*\)\.$/,'.').replace(pre+'.',c+'.')};}}
@@ -334,6 +337,9 @@ const CHK=(()=>{
   for(let k=0;k<o.length-1;k++)if(o[k]==='싶어'&&/^(해요|했어요|합니다|하지)$/.test(o[k+1])){o[k]='싶어'+o[k+1];o.splice(k+1,1);}
   const FUL={'뭘':'뭐를','것입니다':'겁니다','것입니까':'겁니까','것이에요':'거예요','것이에요?':'거예요','여기서':'여기에서','거기서':'거기에서','저기서':'저기에서','어디서':'어디에서'};
   for(let k=0;k<o.length;k++)if(FUL[o[k]])o[k]=FUL[o[k]];
+  for(let k=0;k<o.length;k++)if(o[k]==='함께')o[k]='같이';
+  // 좀 перед просьбой или предложением необязательно: 좀 도와주세요 = 도와주세요
+  for(let k=o.length-1;k>=0;k--)if(o[k]==='좀'&&o.slice(k+1,k+4).some(t=>/(세요|시다|까요|래요)$/.test(t)))o.splice(k,1);
   // 와/과 = 하고 (по алломорфу); 같이/함께 после «с кем» не обязателен
   for(let k=0;k<o.length;k++){const t=o[k],m=t.match(/^(.+)(와|과)$/);if(m&&LEX.nouns.has(m[1])&&(m[2]==='과')===hasB(m[1].slice(-1)))o[k]=m[1]+'하고';}
   for(let k=o.length-1;k>0;k--)if((o[k]==='같이'||o[k]==='함께')&&o[k-1].endsWith('하고'))o.splice(k,1);
@@ -384,9 +390,9 @@ const CHK=(()=>{
  function pConflictAll(a,V){const pa=lite(a).split(' ').map(pCase).filter(Boolean);if(!pa.length)return false;
   const pv=V.flatMap(v=>lite(v).split(' ').map(pCase).filter(Boolean));
   return pa.some(p=>pv.some(q=>q.n===p.n&&q.c!==p.c)&&!pv.some(q=>q.n===p.n&&q.c===p.c));}
- function dopRule(a,V){const A=a.split(' ');if(!A.some(t=>/^(도와|도왔|도울|도우|돕)/.test(t)))return null;
+ function dopRule(a,V){const A=a.split(' ');if(!A.some(t=>/^(도와|도왔|도울|도우|도웁|돕)/.test(t)))return null;
   for(const t of A){const m=t.match(/^(.+?)(한테|에게|께)(는|도|만)?$/);if(!m)continue;
-   for(const x of V){if(!/(^| )(도와|도왔|도울|도우|돕)/.test(x))continue;const y=x.split(' ').find(w=>w===m[1]+'을'||w===m[1]+'를'||w.startsWith(m[1]+'을')||w.startsWith(m[1]+'를'));
+   for(const x of V){if(!/(^| )(도와|도왔|도울|도우|도웁|돕)/.test(x))continue;const y=x.split(' ').find(w=>w===m[1]+'을'||w===m[1]+'를'||w.startsWith(m[1]+'을')||w.startsWith(m[1]+'를'));
     if(y)return {v:'bad',kind:'dop',best:x,note:'돕다 — кому помогают, стоит с 을/를 (как «выручить кого»): '+y+'. 한테/에게 здесь нельзя.',d:diff(a,x)};}
    const o=m[1]+(hasB(m[1].slice(-1))?'을':'를');return {v:'bad',kind:'dop',best:V[0],note:'돕다 — кому помогают, стоит с 을/를: '+o+'. 한테/에게 здесь нельзя.',d:diff(a,V[0])};}
   return null;}
@@ -400,6 +406,10 @@ const CHK=(()=>{
    if(/(래요|게요)\??$/.test(t)){const base=t.replace(/(래요|게요)\??$/,''),sm=LEX.fut&&LEX.fut[base];
     if(sm&&PTC[sm]==='adj')return R('-(으)ㄹ래요 / -(으)ㄹ게요 — только с глаголами. О состоянии — обычная форма: '+LEX.stem[sm].pres+'.','adjv');
     if(A[k-1]==='못'&&t.includes('래요'))return R('래요 — о желании, с ним только 안. «Не смогу» — 못 + обычная форма или 못 갈 거예요.','mot');}
+   if(/마세요$/.test(t)&&V.some(v=>/맙시다/.test(v))&&!V.some(v=>/마세요/.test(v)))return R('-지 마세요 — «не делайте» (просьба к вам). «Давайте не …» (мы все) — -지 맙시다: '+best+'.','neg');
+   if(/^않(읍|습)시다$/.test(t)||(t==='안'&&/시다$/.test(n)&&V.some(v=>/맙시다/.test(v))))return R('«Давайте не …» — только -지 맙시다: '+best+'. 안 …ㅂ시다 и -지 않읍시다 не говорят.','neg');
+   if(V.some(v=>/지 마세요/.test(v))&&!V.some(v=>/(^| )안 /.test(v))&&((t==='안'&&/세요$/.test(n))||(t.endsWith('지')&&/^않으세요$/.test(n))))return R('Запрет, «не делайте» — -지 마세요: '+best+'. 안 …세요 / -지 않으세요 значит «вы не …» (рассказ, вопрос).','neg');
+   if(t.endsWith('지')&&/^(마요|말아요)$/.test(n)&&V.some(v=>/지 마세요/.test(v)))return {v:'ok',kind:'soft',best,note:'Засчитано: -지 마요 — тоже верно, разговорнее. Вежливо — -지 마세요: '+best+'.'};
    if(t==='안'&&/^\S+(하고|해요|했어요|할래요|할게요|할|하지)$/.test(n)){const m=n.match(/^(\S+?)(하고|해요|했어요|할래요|할게요|할|하지)$/);if(m&&LEX.nouns.has(m[1]))return R('안 ставится перед 하다: '+m[1]+' 안 '+n.slice(m[1].length)+'.','neg');}}
   return null;}
 
@@ -413,7 +423,21 @@ const CHK=(()=>{
    if(!ok||diffk<0)continue;const c=X[diffk],t=B[diffk];if(!c.endsWith('래요'))continue;const sm=LEX.fut&&LEX.fut[c.slice(0,-2)];
    if(sm&&LEX.stem[sm]&&LEX.stem[sm].pres===t)return {v:'ok',kind:'soft',best:x,note:'Засчитано: 해요-форма тоже приглашает. -(으)ㄹ래요? мягче — спрашивает, хочет ли собеседник: '+x+'.'};}
   return null;}
+ // -(으)세요 в эталоне, ответ — простой 해요 той же основы: о старшем — ошибка, собеседнику — засчитано с пояснением
+ const HON=/(선생님|할머니|할아버지|아버지|어머니|사장님|엄마|아빠)/,HSP={'드세요':['먹어요','마셔요'],'주무세요':['자요'],'계세요':['있어요']};
+ function hsRule(a,V){const A=canon(a).split(' ');
+  for(const x of V){const X=canon(x).split(' ');if(X.length!==A.length)continue;let k=-1,n=0;for(let i=0;i<X.length;i++)if(X[i]!==A[i]){n++;k=i;}if(n!==1)continue;
+   const c=X[k],t=A[k];let hit=false,sp=false;
+   if(HSP[c]&&HSP[c].includes(t)){hit=true;sp=true;}
+   else{const s=LEX.se&&LEX.se[c];if(s&&LEX.stem[s]&&LEX.stem[s].pres===t)hit=true;}
+   if(!hit)continue;
+   if(sp||HON.test(x))return {v:'bad',kind:'hon',best:x,note:(sp?'У старших и гостя — особый глагол: ':'О старшем — с почтением, -(으)세요: ')+c+'.',d:diff(a,x)};
+   return {v:'ok',kind:'soft',best:x,note:'Засчитано: 해요 — тоже вежливо. -(으)세요 добавляет почтения к собеседнику, здесь тренируем её: '+c+'.'};}
+  return null;}
  function check(item,ans){const r=check0(item,ans);
+  // обращение в начале (선생님, …) — необязательно
+  if(r&&r.v==='unk'){const m=String(ans||'').match(/^\s*([가-힣]+(님|씨))\s*(,?)\s*(.+)$/);
+   if(m&&(m[3]||![item.ko,...(item.alt||[])].some(t=>String(t).includes(m[1])))){const r2=check0(item,m[4]);if(r2&&r2.v!=='unk')return r2;}}
   if(r&&r.v==='typo')return {v:'unk',kind:'typo',typo:1,best:r.best,note:'Похоже на опечатку'+(r.note?' ('+(r.note.charAt(0).toLowerCase()+r.note.slice(1)).replace(/\.$/,'')+')':'')+'. Если это опечатка — «Засчитать»; если не помнил — «Моя ошибка».',d:r.d};
   return r;}
  function check0(item,ans){
@@ -437,11 +461,13 @@ const CHK=(()=>{
   const V=[];for(const t of [item.ko,...(item.alt||[])])for(const x of expand(t))if(!V.includes(x))V.push(x);
   if(V.includes(a))return {v:'ok',kind:'exact',best:a};
   const an=nsp(a);
-  for(const x of V)if(nsp(x)===an)return {v:'typo',kind:'space',best:x,note:'Только пробелы.'};
+  // слитно N하다 при шаблоне «N(을) 하다» — верно; раздельно — «опечатка?»
+  for(const x of V)if(nsp(x)===an){if(!item.strict&&a.split(' ').length<x.split(' ').length&&canon(a)===canon(x))return {v:'ok',kind:'eq',best:x};return {v:'typo',kind:'space',best:x,note:'Только пробелы.'};}
   for(const tr of item.traps||[])for(const x of expand(tr.a))if(nsp(x)===an){
    const best=V.slice().sort((p,q)=>lev(jamo(nsp(p)),jamo(an))-lev(jamo(nsp(q)),jamo(an)))[0];
    if(tr.ok)return {v:'ok',kind:'soft',best,note:tr.why};
    return {v:'bad',kind:'trap',best,note:tr.why,d:diff(a,best)};}
+  if(/시다요(\s|$)/.test(a)){const f=a.replace(/시다요(?=\s|$)/g,'시다'),x=V.find(v=>canon(v)===canon(f))||V.find(v=>/시다(\s|$)/.test(v))||V[0];return {v:'bad',kind:'yo',best:x,note:'-(으)ㅂ시다 — законченная вежливая форма, 요 к ней не добавляют: '+x+'.',d:diff(a,x)};}
   // 반말: эталон без 요, ответ — вежливый (요, 이에요, 주세요, 저/제)
   for(const x of V){const r=banRule(a,x);if(r)return {v:'bad',kind:'ban',best:x,note:r,d:diff(a,x)};}
   // ловушка с 저는/나는 (канон их опускает — иначе ловушка обходится)
@@ -455,7 +481,8 @@ const CHK=(()=>{
   if(item.strict){const cA=canon(a),ng=t=>/(^| )(안|못) /.test(t)?'s':/지 (않|못)/.test(t)?'l':'';
    for(const x of V)if(canon(x)===cA&&!pConflict(a,x)){if(ng(a)===ng(x))return {v:'ok',kind:'eq',best:x};
     return {v:'bad',kind:'strict',best:x,note:'По-корейски верно, но задание просит именно ту форму, что в скобке: '+x+'.',d:diff(a,x)};}}
-  if(!item.strict)for(const tr of item.traps||[])if(!tr.ok)for(const x of expand(tr.a)){const cx=canon(norm(x));if(cx===ca&&!V.some(v=>canon(v)===cx))return {v:'bad',kind:'trap',best:V[0],note:tr.why,d:diff(a,V[0])};}
+  if(!item.strict)for(const tr of item.traps||[])for(const x of expand(tr.a)){const cx=canon(norm(x));if(cx===ca&&!V.some(v=>canon(v)===cx))return tr.ok?{v:'ok',kind:'soft',best:V[0],note:tr.why}:{v:'bad',kind:'trap',best:V[0],note:tr.why,d:diff(a,V[0])};}
+  {const r=hsRule(a,V);if(r)return r;}
   {const r=softQ(item,a,V);if(r)return r;}
   for(const x of V){const r=rules(a,x);if(r)return {v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
   if(!item.strict)for(const x of V){const r=rules(ca,canon(x));if(r)return {v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
@@ -472,7 +499,7 @@ const CHK=(()=>{
    for(const x of V){const tx=tk(x);if(tx.length>2&&tx.slice().sort().join(' ')===ka&&tx[tx.length-1]===ta[ta.length-1])return {v:'unk',kind:'unk',ord:1,best:x,note:'Те же слова, другой порядок. Обычный — как в эталоне: глагол в конце, срок прямо перед ним, группа времени и число со счётным не разрываются. Блоки с частицами переставлять можно: если смысл тот же — засчитай.',d:diff(a,x)};}}
   return {v:'unk',kind:'unk',best,note:'',d:diff(a,best)};
  }
- return {check,expand,norm,link,jamo,lev,diff,setLex,canon};
+ return {check,expand,norm,link,jamo,lev,diff,setLex,canon,lex:()=>LEX};
 })();
 /* ===== Банк заданий (автономный режим) ===== */
 // D.bank = { gN: { qN|_ : [ {ru, ko, alt[], traps[{a,why}], u} ] } }; ko/alt — шаблоны ( ) и [a|b]
