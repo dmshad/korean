@@ -160,7 +160,7 @@ const CHK=(()=>{
   for(const w of D.words||[]){const k=w.ko;if(/\s/.test(k))continue;
    if(['noun','pron','counter','time','num','question'].includes(w.cat))n.add(k);
    if(w.cat==='verb'&&k.endsWith('하다')&&k.length>2&&!/[아어워와여]$/.test(k.slice(0,-2)))n.add(k.slice(0,-2));
-   if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);PTC[sm]=w.cat;
+   if((w.cat==='verb'||w.cat==='adj')&&w.forms&&k.endsWith('다')&&!/\//.test(w.forms.pres||'/')){const sm=k.slice(0,-1);PTC[sm]=PTC[sm]==='verb'?'verb':w.cat;
     st[sm]={pres:w.forms.pres,past:w.forms.past};f[w.forms.pres]={s:sm,p:0};if(w.forms.past)f[w.forms.past]={s:sm,p:1};}}
   const fu={},se={},ps={},re={},as={},ni={},my={},ay={},bo={},ad={};for(const [sm,e] of Object.entries(st)){const t=futTok(sm,e.pres);if(t)fu[t]=sm;const q=seTok(sm,e.pres);if(q)se[q]=sm;const p2=psTok(sm,e.pres);if(p2)ps[p2]=sm;const r2=reTok(sm,e.pres);if(r2)re[r2]=sm;const a2=asTok(sm,e.pres);if(a2&&!as[a2])as[a2]=sm;const n2=niTok(sm,e.pres);if(n2&&!ni[n2])ni[n2]=sm;const m2=myTok(sm,e.pres);if(m2&&!my[m2])my[m2]=sm;const y2=asTok(sm,e.pres);if(y2){const yk=y2.slice(0,-1)+'야',bk=y2.slice(0,-1);if(!ay[yk])ay[yk]=sm;if(!bo[bk])bo[bk]=sm;if(!ad[bk+'도'])ad[bk+'도']=sm;}const n3=String(e.past||'');if(n3.endsWith('어요')&&!ni[n3.slice(0,-2)+'으니까'])ni[n3.slice(0,-2)+'으니까']=sm;}
   const pt={};for(const [sm,cat] of Object.entries(PTC)){const e=st[sm];if(!e)continue;for(const [tk,kd] of ptToks(sm,e.pres,cat))(pt[tk]=pt[tk]||[]).push({s:sm,k:kd,cat});}
@@ -373,8 +373,9 @@ const CHK=(()=>{
    if(/^배(가)?$/.test(a)&&/^(고프|고파|고팠|고플|고픈|부르|불러|불렀|부를|부른)/.test(b)||/^목(이)?$/.test(a)&&/^(마르|말라|말랐|마를|마른)/.test(b)){o[k]=a[0]+b;o.splice(k+1,1);}}
   // 싶어 해요 = 싶어해요; 하지 않아요 после 싶어
   for(let k=0;k<o.length-1;k++)if(o[k]==='싶어'&&/^(해요|했어요|합니다|하지)$/.test(o[k+1])){o[k]='싶어'+o[k+1];o.splice(k+1,1);}
-  const FUL={'뭘':'뭐를','것입니다':'겁니다','것입니까':'겁니까','것이에요':'거예요','것이에요?':'거예요','여기서':'여기에서','거기서':'거기에서','저기서':'저기에서','어디서':'어디에서','어젯밤에':'어젯밤','요즘에':'요즘','요즘에는':'요즘','여기에':'여기','거기에':'거기','저기에':'저기','작년에':'작년','작년에는':'작년','어젯밤에는':'어젯밤'};
+  const FUL={'뭘':'뭐를','것입니다':'겁니다','것입니까':'겁니까','것이에요':'거예요','것이에요?':'거예요','여기서':'여기에서','거기서':'거기에서','저기서':'저기에서','어디서':'어디에서','어젯밤에':'어젯밤','요즘에':'요즘','요즘에는':'요즘','뭘로':'뭐로','여기에':'여기','거기에':'거기','저기에':'저기','작년에':'작년','작년에는':'작년','어젯밤에는':'어젯밤'};
   for(let k=0;k<o.length;k++)if(FUL[o[k]])o[k]=FUL[o[k]];
+  for(let k=0;k<o.length;k++){const m=o[k].match(/^(.+?)(이요|요)$/);if(m&&LEX.nouns.has(m[1])&&(m[2]==='이요')===hasB(m[1].slice(-1)))o[k]=m[1]+(m[2]==='이요'?'이에요':'예요');}
   for(let k=0;k<o.length;k++)if(o[k]==='함께')o[k]='같이';
   // 좀 перед просьбой или предложением необязательно: 좀 도와주세요 = 도와주세요
   for(let k=o.length-1;k>=0;k--)if(o[k]==='좀'&&o.slice(k+1,k+4).some(t=>/(세요|시다|까요|래요)$/.test(t)))o.splice(k,1);
@@ -389,9 +390,14 @@ const CHK=(()=>{
   for(let k=0;k<o.length;k++){const m=o[k].match(TE);if(m){o[k]=m[1]+'에';continue;}if(TE0.test(o[k])){o[k]+='에';continue;}
    const m2=o[k].match(/^(주|달|주말)(에|은|는)$/);if(m2&&k>0&&/^(이번|다음|지난|저번)$/.test(o[k-1]))o[k]=m2[1]+'에';}
   // 아마, 같이 — позиция свободная
-  for(const w of ['방금','금방','이미','벌써','아직','지금','작년','올해','어젯밤','저번에','오늘','어제','내일','맨날','요즘','매일','이따가','나중에','곧','원래','솔직히','절대','일단','제대로','자꾸','점점','서로','거의','당연히','같이','아마']){const i=o.indexOf(w);if(i>0){o.splice(i,1);o.unshift(w);}}
+  for(const w of ['갑자기','방금','금방','이미','벌써','아직','지금','작년','올해','어젯밤','저번에','오늘','어제','내일','맨날','요즘','매일','이따가','나중에','곧','원래','솔직히','절대','일단','제대로','자꾸','점점','서로','거의','당연히','같이','아마']){const i=o.indexOf(w);if(i>0){o.splice(i,1);o.unshift(w);}}
+  // N을 / N에 + N(으)로 — порядок свободный: (으)로 вперёд
+  for(let k=0;k<o.length-1;k++){const a=o[k],b=o[k+1],mb=b.match(/^(.+?)(으로|로)$/),ma=a.match(/^(.+?)(을|를|에)$/);
+   if(mb&&ma&&LEX.nouns.has(mb[1])&&LEX.nouns.has(ma[1])){o[k]=b;o[k+1]=a;}}
+  // срок «… 동안» и объект: 한국어를 일 년 동안 = 일 년 동안 한국어를
+  for(let k=2;k<o.length;k++){if(o[k]!=='동안')continue;const g=o.slice(k-2,k+1),pr=o[k-3];if(pr&&/(을|를)$/.test(pr)&&LEX.nouns.has(pr.slice(0,-1))){o.splice(k-3,4,...g,pr);}}
   // «N이 место에 있어요» = «место에 N이 있어요»
-  for(let v=2;v<o.length;v++){if(!/^(있|없)/.test(o[v])||LEX.nouns.has(o[v]))continue;if(!(o[v-1].length>1&&o[v-1].endsWith('에')&&!o[v-1].endsWith('에게')))continue;
+  for(let v=2;v<o.length;v++){if(!/^(있|없)/.test(o[v])||LEX.nouns.has(o[v]))continue;if(!(o[v-1].length>1&&o[v-1].endsWith('에')&&!o[v-1].endsWith('에게'))||o[v-1]==='어디에')continue;
    let p0=v-1;while(p0-1>=0&&(LEX.nouns.has(o[p0-1])||o[p0-1].endsWith('의')&&LEX.nouns.has(o[p0-1].slice(0,-1))))p0--;const sj=o[p0-1];
    if(p0>=1&&sj&&/(이|가|은|는)$/.test(sj)&&LEX.nouns.has(sj.slice(0,-1))){o.splice(p0-1,1);o.splice(v-1,0,sj);}}
   T=o.filter(t=>t!=='저는'&&t!=='나는').map(t=>{if(t==='저의')return '제';if(t==='나의')return '내';const m=t.match(/^(.+)한테(도|만)?$/);if(m&&LEX.nouns.has(m[1]))return m[1]+'에게'+(m[2]||'');return t;}).map(t=>{if(t.endsWith('의')&&t.length>1&&!LEX.nouns.has(t)&&LEX.nouns.has(t.slice(0,-1)))return t.slice(0,-1);return t;}).map((t,k,A)=>/^(거예요|거에요|겁니다|겁니까|꺼예요)/.test(A[k+1]||'')?t:stripP(t));
@@ -478,6 +484,29 @@ const CHK=(()=>{
    if(!ok||diffk<0)continue;const c=X[diffk],t=B[diffk];if(!c.endsWith('래요'))continue;const sm=LEX.fut&&LEX.fut[c.slice(0,-2)];
    if(sm&&LEX.stem[sm]&&LEX.stem[sm].pres===t)return {v:'ok',kind:'soft',best:x,note:'Засчитано: 해요-форма тоже приглашает. -(으)ㄹ래요? мягче — спрашивает, хочет ли собеседник: '+x+'.'};}
   return null;}
+ // связки 그리고 / 그래서 / 그러니까 / 하지만 / 그런데 / 그러면 / 그래도
+ const CONN={'그리고':'«И, а ещё, а потом» — 그리고','그래서':'«Поэтому» (следствие) — 그래서','그러니까':'Перед просьбой или предложением «так что» — 그러니까','하지만':'«Но» — 하지만 (в речи 그런데)','그런데':'«Но, а; кстати; а тут…» — 그런데','근데':'«Но, а; кстати; а тут…» — 그런데 (근데)','그러면':'«Тогда, в таком случае» (вывод из слов собеседника) — 그러면 (그럼)','그럼':'«Тогда, в таком случае» — 그럼 (그러면)','그래도':'«И всё же, всё равно» — 그래도'};
+ function connRule(item,a,V){const A=canon(a).split(' ');
+  for(const x of V){const X=canon(x).split(' ');if(X.length!==A.length)continue;let k=-1,n=0;for(let i=0;i<X.length;i++)if(X[i]!==A[i]){n++;k=i;}if(n!==1)continue;
+   const BUT=/^(하지만|그런데|근데)$/;if(BUT.test(X[k])&&BUT.test(A[k])){if(X[k]!=='하지만'&&A[k]==='하지만'&&/(кстати|а тут|вдруг|тут)/i.test(item.ru||''))return {v:'bad',kind:'conn',best:x,note:'«Кстати», «а тут…» — только 그런데; 하지만 так не употребляется.',d:diff(a,x)};return {v:'ok',kind:'eq',best:x};}
+   if(/^(그러면|그럼)$/.test(X[k])&&/^(그러면|그럼)$/.test(A[k]))return {v:'ok',kind:'eq',best:x};
+   if(CONN[X[k]]&&CONN[A[k]])return {v:'bad',kind:'conn',best:x,note:CONN[X[k]]+'.',d:diff(a,x)};}
+  return null;}
+ // (으)로: направление, средство, язык — не 에 / 에서 / 을
+ function roRule2(a,V){for(const cv of [canon,t=>t]){const A=cv(a).split(' ');
+  for(const x of V){const X=cv(x).split(' ');if(X.length!==A.length)continue;let k=-1,n=0;for(let i=0;i<X.length;i++)if(X[i]!==A[i]){n++;k=i;}if(n!==1)continue;
+   const mc=X[k].match(/^(.+?)(으로|로)$/),mt=A[k].match(/^(.+?)(에서|에|을|를)$/);if(!mc||!mt||mc[1]!==mt[1])continue;const N=mc[1],nx=X[k+1]||'';
+   const MV=/^(가|갔|갈|갑|오|왔|올|와|옵|돌|도|들어|나가|나와|돌아)/;
+   if(mt[2]==='에'&&MV.test(nx)&&!/^(돌|도)/.test(nx)&&!/쪽$/.test(N))return {v:'ok',kind:'eq',best:x};
+   const note=/쪽$|^(어디|여기|거기|저기)$/.test(N)||MV.test(nx)?'Направление «куда, в какую сторону» — (으)로: '+X[k]+'.':'На чём, чем, на каком языке, каким способом — (으)로: '+X[k]+'.';
+   return {v:'bad',kind:'ro2',best:x,note,d:diff(a,x)};}}
+  return null;}
+ // 우리 ↔ 저희
+ function wjRule(a,V){const A=canon(a).split(' ');
+  for(const x of V){const X=canon(x).split(' ');if(X.length!==A.length)continue;let k=-1,n=0;for(let i=0;i<X.length;i++)if(X[i]!==A[i]){n++;k=i;}if(n!==1)continue;
+   if(X[k]==='저희'&&A[k]==='우리')return {v:'ok',kind:'soft',best:x,note:'Засчитано. Клиенту, старшему — скромное 저희; 우리 — с равными.'};
+   if(X[k]==='우리'&&A[k]==='저희')return {v:'ok',kind:'soft',best:x,note:'Засчитано. С равными обычно 우리; 저희 — скромно, к старшим и клиентам.'};}
+  return null;}
  // путаница связок: -아서 / -(으)니까 / -(으)면
  function cxForms(c){const r=[];const add=(k,s)=>{if(s)r.push([k,s]);};add('as',LEX.as&&LEX.as[c]);add('ni',LEX.ni&&LEX.ni[c]);add('my',LEX.my&&LEX.my[c]);
   const m=c.match(/^(.+?)(이라서|라서|이니까|니까|이면|면)$/);if(m&&LEX.nouns.has(m[1]))r.push([m[2].includes('서')?'as':m[2].includes('까')?'ni':'my','N:'+m[1]]);
@@ -505,6 +534,8 @@ const CHK=(()=>{
   return null;}
  // лексические путаницы
  function confRule(a,V){const best=V[0],B=note=>({v:'bad',kind:'lex',best,note,d:diff(a,best)});
+  {const m=a.match(/(\S+?)(을|를|이|가|의) 대신/);if(m&&LEX.nouns.has(m[1])&&!V.some(v=>v.includes(m[0])))return B('«Вместо N» — N 대신(에), без частицы: '+m[1]+' 대신.');}
+  {const m=a.match(/(\S+?)(이|가|을|를) (정도|쯤)/);if(m&&/(명|시간|분|원|년|개|달|살|번|잔|주|일|층|마리|권|병|장)$/.test(m[1]))return B('정도 — сразу после количества, без частицы: '+m[1]+' '+m[3]+'.');}
   if(/감기(가|를|이) 걸/.test(a)&&V.some(v=>/감기에 걸/.test(v)))return B('Простудиться — 감기에 걸리다 (частица 에).');
   if(/약(을|이)? (마시|마셔|마셨|마실)/.test(a)&&V.some(v=>/약(을)? (먹|드)/.test(v)))return B('Лекарство «едят»: 약을 먹다 (старшим — 드시다).');
   if(/잃어버/.test(a)&&!V.some(v=>/잃어버/.test(v))&&V.some(v=>/잊어버/.test(v)))return B('Забыть — 잊어버리다. 잃어버리다 — потерять (вещь).');
@@ -512,8 +543,8 @@ const CHK=(()=>{
   return null;}
  // -(으)세요 в эталоне, ответ — простой 해요 той же основы: о старшем — ошибка, собеседнику — засчитано с пояснением
  const HON=/(선생님|할머니|할아버지|아버지|어머니|사장님|엄마|아빠)/,HONW=/^(선생님|할머니|할아버지|아버지|어머니|사장님|엄마|아빠|부모님|손님)(이|가|은|는|께서|께서는|도|만)?$/,HSP={'드세요':['먹어요','마셔요'],'주무세요':['자요'],'계세요':['있어요']};
- function hsRule(a,V,item){const A=canon(a).split(' ');
-  for(const x of V){const X=canon(x).split(' ');if(X.length!==A.length)continue;let k=-1,n=0;for(let i=0;i<X.length;i++)if(X[i]!==A[i]){n++;k=i;}if(n!==1)continue;
+ function hsRule(a,V,item){const A=canon(a).split(' ').filter(t=>t!=='좀'&&t!=='조금');
+  for(const x of V){const X=canon(x).split(' ').filter(t=>t!=='좀'&&t!=='조금');if(X.length!==A.length)continue;let k=-1,n=0;for(let i=0;i<X.length;i++)if(X[i]!==A[i]){n++;k=i;}if(n!==1)continue;
    const c=X[k],t=A[k];let hit=false,sp=false;
    if(HSP[c]&&HSP[c].includes(t)){hit=true;sp=true;}
    else{const s=LEX.se&&LEX.se[c];if(s&&LEX.stem[s]&&LEX.stem[s].pres===t)hit=true;}
@@ -564,7 +595,7 @@ const CHK=(()=>{
  // нестянутые формы (생기었어요, 지내었어요) — верно, засчитано с пояснением
  function uncRule(a,V){const A=a.split(' ');
   for(const x of V){const X=x.split(' ');if(X.length!==A.length)continue;const d=[];for(let i=0;i<X.length;i++)if(X[i]!==A[i])d.push(i);if(d.length!==1)continue;
-   const c=X[d[0]],t=A[d[0]],f=LEX.form[c];if(!f)continue;const st=f.s,l=st.slice(-1);if(!isH(l))continue;const dv=dec(l);if(dv.t!==0||![20,1,5,8,13].includes(dv.v))continue;
+   const c=X[d[0]],t=A[d[0]],f=LEX.form[c];if(!f)continue;const st=f.s,l=st.slice(-1);if(!isH(l))continue;const dv=dec(l);if(dv.t!==0||![20,1,5,8,13,11].includes(dv.v))continue;
    if([st+'어요',st+'었어요',st+'아요',st+'았어요'].includes(t))return {v:'ok',kind:'soft',best:x,note:'Засчитано: так тоже верно, но обычно пишут слитно: '+c+'.'};}
   return null;}
  // предложение: добавленное 같이; 해요 вместо -(으)ㅂ시다 / -(으)ㄹ까요; -(으)ㄹ래요? вместо -(으)ㄹ까요? — засчитано с пояснением
@@ -641,9 +672,9 @@ const CHK=(()=>{
    for(const x of V)if(canon(x)===cA&&!pConflict(a,x)){if(ng(a)===ng(x))return {v:'ok',kind:'eq',best:x};
     return {v:'bad',kind:'strict',best:x,note:'По-корейски верно, но задание просит именно ту форму, что в скобке: '+x+'.',d:diff(a,x)};}}
   if(!item.strict)for(const tr of item.traps||[])for(const x of expand(tr.a)){const cx=canon(norm(x));if(cx===ca&&!V.some(v=>canon(v)===cx))return tr.ok?{v:'ok',kind:'soft',best:V[0],note:tr.why}:{v:'bad',kind:'trap',best:V[0],note:tr.why,d:diff(a,V[0])};}
-  {const r=hsRule(a,V,item)||cxRule(item,a,V)||fuRule(item,a,V)||(item.strict?null:sugRule(item,a,V))||phRule(a,V)||cntRule(a,V)||adjObj(a,V)||topRule(item,a,V)||uncRule(a,V);if(r)return r;}
+  {const r=hsRule(a,V,item)||cxRule(item,a,V)||fuRule(item,a,V)||connRule(item,a,V)||roRule2(a,V)||wjRule(a,V)||(item.strict?null:sugRule(item,a,V))||phRule(a,V)||cntRule(a,V)||adjObj(a,V)||topRule(item,a,V)||uncRule(a,V);if(r)return r;}
   {const r=softQ(item,a,V);if(r)return r;}
-  const JG=r=>r&&r.kind==='jg'&&!/(^|[^а-яё])но([^а-яё]|$)/i.test(item.ru||'')?{kind:'jg',ok:true,note:'Засчитано: «а» можно передать и -고. -지만 сильнее подчёркивает контраст.'}:r;
+  const JG=r=>r&&r.kind==='ag'&&V.some(v=>/(쪽으로|도세요|돌면|쭉)/.test(v))?{kind:'ag',ok:true,note:'Засчитано. В маршруте естественнее -아서: '+r.note.split(': ')[1].split('.')[0]+'.'}:r&&r.kind==='jg'&&!/(^|[^а-яё])но([^а-яё]|$)/i.test(item.ru||'')?{kind:'jg',ok:true,note:'Засчитано: «а» можно передать и -고. -지만 сильнее подчёркивает контраст.'}:r;
   for(const x of V){const r=JG(rules(a,x));if(r)return r.ok?{v:'ok',kind:'soft',best:x,note:r.note}:{v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
   if(!item.strict)for(const x of V){const r=JG(rules(ca,canon(x)));if(r)return r.ok?{v:'ok',kind:'soft',best:x,note:r.note}:{v:'bad',kind:r.kind,best:x,note:r.note,d:diff(a,x)};}
   const la=pron(an);
@@ -653,7 +684,7 @@ const CHK=(()=>{
   const ja=jamo(an);let best=V[0],bd=99;for(const x of V){const d=lev(jamo(nsp(x)),ja);if(d<bd){bd=d;best=x;}}
   if(bd===1&&jamo(nsp(best)).length>=4&&!oneJ(jamo(nsp(best)),ja).includes('ㅆ')&&nounTypo(a,best))return {v:'typo',kind:'jamo',best,note:'Описка в одной букве.',d:diff(a,best)};
   // ловушка с опечаткой (одна чамо): ошибка по смыслу важнее опечатки
-  const pSwap=(x)=>{const X=x.split(' '),A2=an.split(' ');if(X.length!==A2.length)return false;const d=X.map((t,i)=>[t,A2[i]]).filter(([p,q])=>p!==q);return d.length===1&&/^(.+)(은|는|을|를|이|가)$/.test(d[0][0])&&/^(.+)(은|는|을|를|이|가)$/.test(d[0][1])&&d[0][0].slice(0,-1)===d[0][1].slice(0,-1);};
+  const pSwap=(x)=>{const X=x.split(' '),A2=an.split(' ');if(X.length!==A2.length)return false;const d=X.map((t,i)=>[t,A2[i]]).filter(([p,q])=>p!==q);if(d.length!==1)return false;const PR=/^(.+?)(은|는|을|를|이|가|으로|로|에서|에|이요|요|이에요|예요)$/,m1=d[0][0].match(PR),m2=d[0][1].match(PR);return !!(m1&&m2&&m1[1]===m2[1]);};
   for(const tr of item.traps||[])if(!tr.ok)for(const x of expand(tr.a))if(!pSwap(norm(x))&&lev(jamo(nsp(x)),ja)<=1&&jamo(nsp(x)).length>=4)return {v:'bad',kind:'trap',best,note:tr.why+' Плюс ошибка в написании — сравни с эталоном.',d:diff(a,best)};
   // те же слова в другом порядке — подсказка; вердикт ставит ученик
   if(!item.strict){const tk=t=>lite(norm(t)).split(' ').filter(Boolean),ta=tk(a),ka=ta.slice().sort().join(' ');
