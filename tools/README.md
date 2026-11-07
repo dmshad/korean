@@ -30,3 +30,21 @@ build_pkg.py → deploy.sh "<сообщение>" <артефакт.html>.
 - «Формы»: cjTypes, cjAns, CJW, REOX, niForm, seForm, psForm, hForm, myForm, ptForm, reoForm, fForm, neg, mo.
 - Письменность и «На слух»: LJ (чамо), алфавитный указатель словаря (ini), auItem, auListHTML, AULEAD; lang="ko" у полей ввода, localeCompare('ko').
 - Подписи категорий: CAT, CATN.
+
+# Полный бэкап и восстановление с нуля (с 07.11.2026)
+Что где лежит:
+- Приложение и исходники — корень, src/, content/, tools/ (build.py ko собирает артефакт побайтно).
+- Документы проекта Claude — docs/: artifact_plan.md, korean_learned.md, project_instructions.md (текст инструкций проекта).
+  При изменении файлов проекта копии в docs/ обновлять тем же коммитом.
+- База артефакта в Claude — backup/claude-db/ (trainer/state, state_off, mode; снимок от 07.11.2026, состояние на 01–02.10 —
+  с тех пор учёба идёт в PWA). Текущий прогресс — в телефоне: «Прогресс → Резервная копия → Выгрузить»; файл можно положить в backup/progress/.
+- НЕ в репозитории: токен GitHub (github.md — хранить отдельно, в менеджере паролей).
+
+Восстановление, если артефакт или проект Claude потеряны:
+1. git clone https://github.com/dmshad/korean.git → cp tools/* /home/claude/ → токен в /home/claude/.ghtoken.
+2. python3 build.py ko korean.html — артефакт из частей.
+3. Artifact publish korean.html (новый) с capabilities {"db":{}, "sample":{}} — обе обязательны: db хранит прогресс внутри Claude,
+   sample — запросы к Claude со страницы. Рантайм был contract 0.2.54 (по умолчанию — текущий).
+4. При необходимости вернуть базу: ArtifactData set trainer/state, trainer/state_off, trainer/mode из backup/claude-db/.
+5. Новый проект Claude: инструкции из docs/project_instructions.md (заменить ссылку на артефакт), файлы — docs/*.md + github.md с токеном.
+6. Дальше — обычный порядок (build_pkg.py → deploy.sh). Приложение на github.io от артефакта не зависит и работает без Claude.
